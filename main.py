@@ -7,13 +7,15 @@ import pdb
 def main():
     X, Y = mean_glove()
 
+    #pdb.set_trace()
     logreg = linear_model.LogisticRegression(C=1e5)
     #logreg.fit(X, Y)
     
     scores = cross_val_score(logreg, X, Y, cv=10, scoring='precision')
     print "Precision: %0.2f " % (scores.mean())
-    pdb.set_trace()
+    #pdb.set_trace()
 
 
 if __name__=="__main__":
     main()
+    pdb.set_trace()
