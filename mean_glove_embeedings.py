@@ -5,7 +5,8 @@ from nltk import tokenize
 from data_handler import get_data
 import pdb
 
-GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
+#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
+GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.100d.txt"
 
 MyTokenizer = tokenize.casual.TweetTokenizer(strip_handles=True, reduce_len=True)
 
@@ -15,9 +16,9 @@ def mean_glove():
     X, Y = [], []
 
     y_map = {
-            'none': 0,
-            'racism': 1,
-            'sexism': 2
+            'none': 1,
+            'racism': 2,
+            'sexism': 3
         }
 
     # Embeeding Model
