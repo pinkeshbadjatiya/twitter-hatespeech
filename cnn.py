@@ -1,7 +1,11 @@
 from data_handler import get_data
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Embedding
+from keras.layers import Embedding, Input
+from keras.layers.pooling import MaxPooling1D
+from keras.utils.np_utils import to_categorical
+from keras.layers.convolutional import Convolution1D as Conv1D
+import numpy as np
 import codecs
 
 ### Preparing the text data
@@ -16,7 +20,7 @@ label_map = {
 tweet_data = get_data()
 for tweet in tweet_data:
     texts.append(tweet['text'])
-    labels.append(tweet['label'])
+    labels.append(label_map[tweet['label']])
 print('Found %s texts. (samples)' % len(texts))
 
 
@@ -59,12 +63,18 @@ y_val = labels[-nb_validation_samples:]
 
 ### Embeeding layer
 embeddings_index = {}
-with codecs.open(GLOVE_MODEL_FILE, 'r', encodings='utf-8') as f:
-    for line in f:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embeddings_index[word] = coefs
+# Python2 takes "encodings" as an argument
+errors=0
+with codecs.open(GLOVE_MODEL_FILE, 'r', encoding='utf-8') as f:
+    for line in f.readlines():
+        try:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+        except:
+            errors += 1
+            print(errors+1, line)
 
 print('Found %s word vectors.' % len(embeddings_index))
 
