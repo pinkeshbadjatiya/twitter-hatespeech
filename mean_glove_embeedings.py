@@ -51,8 +51,8 @@ def mean_glove():
     
 
 def tokenize(tweet):
-    #return MyTokenizer.tokenize(tweet)
-    return tokenize_g(tweet)
+    return MyTokenizer.tokenize(tweet)
+    #return tokenize_g(tweet)
 
 if __name__=="__main__":
     mean_glove()
