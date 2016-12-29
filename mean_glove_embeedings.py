@@ -3,10 +3,11 @@ import numpy as np
 import nltk
 from nltk import tokenize
 from data_handler import get_data
+from preprocess_twitter import tokenize as tokenize_g
 import pdb
 
-#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
-GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.100d.txt"
+GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter200-w2v"
+#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
 
 MyTokenizer = tokenize.casual.TweetTokenizer(strip_handles=True, reduce_len=True)
 
@@ -34,7 +35,7 @@ def mean_glove():
                 pass
                 #print 'Skipping a word %s' %(w)
         if not len(_emb):
-            print 'BLANK mean, skipping this tweet'
+            #print 'BLANK mean, skipping this tweet'
             continue
             #pdb.set_trace()
         _emb = np.mean(np.asarray(_emb), axis=0)
@@ -50,7 +51,8 @@ def mean_glove():
     
 
 def tokenize(tweet):
-    return MyTokenizer.tokenize(tweet)
+    #return MyTokenizer.tokenize(tweet)
+    return tokenize_g(tweet)
 
 if __name__=="__main__":
     mean_glove()

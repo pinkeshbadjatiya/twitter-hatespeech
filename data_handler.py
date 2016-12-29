@@ -1,11 +1,12 @@
 import json
 import pdb
+import codecs
 
 def get_data():
     tweets = []
     files = ['racism.json', 'neither.json', 'sexism.json']
     for file in files:
-        with open('./tweet_data/' + file, 'r') as f:
+        with codecs.open('./tweet_data/' + file, 'r', encoding='utf-8') as f:
             data = f.readlines()
         for line in data:
             tweet_full = json.loads(line)
