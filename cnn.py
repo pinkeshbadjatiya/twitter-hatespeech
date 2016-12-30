@@ -17,7 +17,6 @@ import gensim, sklearn
 from collections import defaultdict
 from batch_gen import batch_gen
 
-GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
 
 ### Preparing the text data
 texts = []  # list of text samples
@@ -36,43 +35,61 @@ print('Found %s texts. (samples)' % len(texts))
 
 
 # Load the orginal glove file
-GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+# SHASHANK files
+#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+
+
+# PINKESH files
+GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
+
+
 EMBEDDING_DIM = 25
 MAX_NB_WORDS = None
 MAX_SEQUENCE_LENGTH = 20
 VALIDATION_SPLIT = 0.2
-# 
-# texts = texts[:1]
-# print texts[0]
-# labels = labels[:1]
+word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
+
 
 # vocab generation
 MyTokenizer = tokenize.casual.TweetTokenizer(strip_handles=True, reduce_len=True)
-vocab = {}
+vocab, reverse_vocab = {}, {}
 freq = defaultdict(int)
 tweets = {}
+
+
+def get_embedding(word):
+    try:
+        return word2vec_model[word]
+    except Exception, e:
+        print 'Encoding not found: %s' %(word)
+        return np.zeros(EMBEDDING_DIM) 
+
+
+def get_embedding_weights():
+    embedding = []
+    embedding.append([0]*EMBEDDING_DIM)     # Create a NULL vector entry for the 1st index
+    for (w_index, word) in sorted(reverse_vocab.iteritems()):
+        embedding.append(get_embedding(word))
+    #pdb.set_trace()
+    return np.array(embedding)
+
 
 def select_tweets():
     # selects the tweets as in mean_glove_embedding method
     # Processing
     tweets = get_data()
     X, Y = [], []
-    model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
+    tweet_return = []
     for tweet in tweets:
-        _emb = []
+        _emb = 0
         words = tokenize(tweet['text'])
         for w in words:
-            try:
-                word_emb = model[w]
-                _emb.append(word_emb)
-            except:
-                pass
-                #print 'Skipping a word %s' %(w)
-        if not len(_emb):
-            #print 'BLANK mean, skipping this tweet'
-            tweets.remove(tweet)
-            #pdb.set_trace()
-    return tweets
+            if w in word2vec_model:  # Check if embeeding there in GLove model
+                _emb+=1
+        if _emb:   # Not a blank tweet
+            tweet_return.append(tweet)
+    print 'Tweets selected:', len(tweet_return)
+    return tweet_return
 
 
 def gen_vocab():
@@ -83,9 +100,11 @@ def gen_vocab():
         for word in words:
             if word not in vocab:
                 vocab[word] = vocab_index
+                reverse_vocab[vocab_index] = word       # generate reverse vocab as well
                 vocab_index += 1
             freq[word] += 1
     vocab['UNK'] = len(vocab) + 1
+    reverse_vocab[len(vocab)+1] = 'UNK'
 
 
 def filter_vocab(k):
@@ -94,6 +113,11 @@ def filter_vocab(k):
     vocab = dict(tokens, range(1, len(tokens) + 1))
     vocab['UNK'] = len(vocab) + 1
 
+
+#def gen_embeeding_matrix():
+#    emb_matrix = []
+#    for k, v in vocab.iteritems():
+#        emb_matrix.append(
 
 def gen_sequence():
     y_map = {
@@ -105,12 +129,11 @@ def gen_sequence():
     X, y = [], []
     for tweet in tweets:
         words = tokenize(tweet['text'])
-        seq = []
+        seq, _emb = [], []
         for word in words:
             seq.append(vocab.get(word, vocab['UNK']))
         X.append(seq)
         y.append(y_map[tweet['label']])
-    #print y
     return X, y
 
     
@@ -118,7 +141,7 @@ def tokenize(tweet):
     return MyTokenizer.tokenize(tweet)
 
 
-def cnn_model(sequence_length, embedding_dim):
+def cnn_model(sequence_length, embedding_dim, embedding_weights):
     model_variation = 'CNN-rand'  #  CNN-rand | CNN-non-static | CNN-static
     print('Model variation is %s' % model_variation)
 
@@ -161,8 +184,8 @@ def cnn_model(sequence_length, embedding_dim):
     # main sequential model
     model = Sequential()
     #if not model_variation=='CNN-rand':
-    model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))
-                            #weights=embedding_weights))
+    model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length,
+                            weights=embedding_weights))
     model.add(Dropout(dropout_prob[0], input_shape=(sequence_length, embedding_dim)))
     model.add(graph)
     model.add(Dense(hidden_dims))
@@ -234,7 +257,7 @@ if __name__ == "__main__":
     data = pad_sequences(X, maxlen=MAX_SEQUENCE_LENGTH)
     y = np.array(y)
     data, y = sklearn.utils.shuffle(data, y)
-    model = cnn_model(data.shape[1], 25)
+    model = cnn_model(data.shape[1], 25, get_embedding_weights())
     train_CNN(data, y, model, 25)
     
     pdb.set_trace()
