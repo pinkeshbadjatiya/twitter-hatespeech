@@ -7,9 +7,11 @@ from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, 
 import numpy as np
 import pdb
 from nltk import tokenize
+from sklearn.model_selection import KFold
+from keras.utils import np_utils
 import codecs
 import operator
-import gensim
+import gensim, sklearn
 from collections import defaultdict
 from batch_gen import batch_gen
 
@@ -106,7 +108,7 @@ def gen_sequence():
             seq.append(vocab.get(word, vocab['UNK']))
         X.append(seq)
         y.append(y_map[tweet['label']])
-    print y
+    #print y
     return X, y
 
     
@@ -119,7 +121,7 @@ def cnn_model(sequence_length, embedding_dim):
     print('Model variation is %s' % model_variation)
 
     # Model Hyperparameters
-    sequence_length = 56
+    n_classes = 3
     embedding_dim = 20          
     filter_sizes = (3, 4)
     num_filters = 150
@@ -143,10 +145,10 @@ def cnn_model(sequence_length, embedding_dim):
                              border_mode='valid',
                              activation='relu',
                              subsample_length=1)(graph_in)
-    pool = MaxPooling1D(pool_length=2)(conv)
-    flatten = Flatten()(pool)
-    convs.append(flatten)
-    
+        pool = MaxPooling1D(pool_length=2)(conv)
+        flatten = Flatten()(pool)
+        convs.append(flatten)
+        
     if len(filter_sizes)>1:
         out = Merge(mode='concat')(convs)
     else:
@@ -156,33 +158,43 @@ def cnn_model(sequence_length, embedding_dim):
 
     # main sequential model
     model = Sequential()
-    if not model_variation=='CNN-rand':
-        model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))
+    #if not model_variation=='CNN-rand':
+    model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))
                             #weights=embedding_weights))
     model.add(Dropout(dropout_prob[0], input_shape=(sequence_length, embedding_dim)))
     model.add(graph)
     model.add(Dense(hidden_dims))
     model.add(Dropout(dropout_prob[1]))
     model.add(Activation('relu'))
-    model.add(Dense(1))
-    model.add(Activation('sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    model.add(Dense(n_classes))
+    model.add(Activation('softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    return model
 
-
-def train_CNN(X, y, model, inp_dim, epochs=10):
-    cv_object = KFold(10, shuffle=True, random_state=42)
+def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=32):
+    cv_object = KFold(n_splits=10, shuffle=True, random_state=42)
+    print cv_object
     p, r, f1 = 0., 0., 0.
     p1, r1, f11 = 0., 0., 0.
+    sentence_len = X.shape[1]
     for train_index, test_index in cv_object.split(X):
         X_train, y_train = X[train_index], y[train_index]
         X_test, y_test = X[test_index], y[test_index]
-        pdb.set_trace()
+        #pdb.set_trace()
         y_train = y_train.reshape((len(y_train), 1))
-        X = np.vstack((X_train, y_train))
+        X = np.hstack((X_train, y_train))
         for epoch in xrange(epochs):
-            for X_batch in batch_gen(X):
-                loss = model.train_on_batch(X_batch[:, :inp_dim], X_batch[:, inp_dim])
-                print loss
+            for X_batch in batch_gen(X, batch_size):
+                x = X_batch[:, :sentence_len]
+                y = X_batch[:, sentence_len]
+                try:
+                    y = np_utils.to_categorical(y)
+                except Exception as e:
+                    print e
+                    print y
+                print x.shape, y.shape
+                loss, acc = model.train_on_batch(x, y)
+                print loss, acc
         #clf.fit(X_train, y_train)
         y_pred = model.predict_on_batch(X_test)
         #y_pred = clf.predict(X_test)
@@ -217,6 +229,7 @@ if __name__ == "__main__":
     MAX_SEQUENCE_LENGTH = max(map(lambda x:len(x), X))
     data = pad_sequences(X, maxlen=MAX_SEQUENCE_LENGTH)
     y = np.array(y)
+    data, y = sklearn.utils.shuffle(data, y)
     model = cnn_model(data.shape[1], 25)
     train_CNN(data, y, model, 25)
     
