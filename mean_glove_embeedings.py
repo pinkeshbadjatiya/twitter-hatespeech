@@ -7,8 +7,8 @@ from preprocess_twitter import tokenize as tokenize_g
 import pdb
 
 #GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter200-w2v"
-#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
-GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
+GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
 
 
 MyTokenizer = tokenize.casual.TweetTokenizer(strip_handles=True, reduce_len=True)
@@ -47,6 +47,7 @@ def mean_glove():
 
     #pdb.set_trace()
     X = np.concatenate(X, axis=0)
+    print X.shape
     Y = np.asarray(Y)
     return X, Y
     

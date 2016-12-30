@@ -10,12 +10,13 @@ from sklearn.model_selection import KFold
 
 def main():
     X, Y = mean_glove()
+    pdb.set_trace()
     NO_OF_FOLDS=10
     #X, Y = shuffle(X, Y)
     #pdb.set_trace()
     # precision = make_scorer(accuracy_score)
-    #logreg = linear_model.LogisticRegression()
-    logreg = GradientBoostingClassifier()
+    logreg = linear_model.LogisticRegression()
+    #logreg = GradientBoostingClassifier()
     # cv_object = KFold(10, shuffle=True, random_state=42)
     # p, r, f1 = 0., 0., 0.
     # p1, r1, f11 = 0., 0., 0.
