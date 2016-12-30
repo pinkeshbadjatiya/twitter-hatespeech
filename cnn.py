@@ -184,24 +184,24 @@ def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=32):
         X_test, y_test = X[test_index], y[test_index]
         #pdb.set_trace()
         y_train = y_train.reshape((len(y_train), 1))
-        X = np.hstack((X_train, y_train))
+        X_temp = np.hstack((X_train, y_train))
         for epoch in xrange(epochs):
-            for X_batch in batch_gen(X, batch_size):
+            for X_batch in batch_gen(X_temp, batch_size):
                 x = X_batch[:, :sentence_len]
-                y = X_batch[:, sentence_len]
+                y_temp = X_batch[:, sentence_len]
                 try:
-                    y = np_utils.to_categorical(y, nb_classes=3)
+                    y_temp = np_utils.to_categorical(y_temp, nb_classes=3)
                 except Exception as e:
                     print e
-                    print y
+                    print y_temp
                 print x.shape, y.shape
-                loss, acc = model.train_on_batch(x, y)
+                loss, acc = model.train_on_batch(x, y_temp)
                 print loss, acc
         #clf.fit(X_train, y_train)
         y_pred = model.predict_on_batch(X_test)
-        #y_pred = clf.predict(X_test)
-        print y_pred
-        pdb.set_trace()
+        y_pred = np.argmax(y_pred, axis=1)
+        #print y_pred
+        #pdb.set_trace()
         print classification_report(y_test, y_pred)
         print precision_recall_fscore_support(y_test, y_pred)
         print y_pred
