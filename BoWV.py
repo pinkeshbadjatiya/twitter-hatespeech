@@ -1,4 +1,5 @@
 from data_handler import get_data
+import sys
 import numpy as np
 from preprocess_twitter import tokenize as tokenizer_g
 import pdb
@@ -39,16 +40,17 @@ print('Found %s texts. (samples)' % len(texts))
 
 # Load the orginal glove file
 # SHASHANK files
-GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
 
 
 # PINKESH files
-#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
+EMBEDDING_DIM = sys.argv[1]
+GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + EMBEDDING_DIM+"d.txt"
 
 
-EMBEDDING_DIM = 25
+SEED=42
 MAX_NB_WORDS = None
-MAX_SEQUENCE_LENGTH = 20
+#MAX_SEQUENCE_LENGTH = 20
 VALIDATION_SPLIT = 0.2
 word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
 word_embed_size = word2vec_model['the'].shape[0]
@@ -58,24 +60,24 @@ MyTokenizer = tokenize.casual.TweetTokenizer(strip_handles=True, reduce_len=True
 vocab, reverse_vocab = {}, {}
 freq = defaultdict(int)
 tweets = {}
-
-
-def get_embedding(word):
-    try:
-        return word2vec_model[word]
-    except Exception, e:
-        print 'Encoding not found: %s' %(word)
-        return np.zeros(EMBEDDING_DIM) 
-
-
-def get_embedding_weights():
-    embedding = []
-    embedding.append([0]*EMBEDDING_DIM)     # Create a NULL vector entry for the 1st index
-    for (w_index, word) in sorted(reverse_vocab.iteritems()):
-        embedding.append(get_embedding(word))
-    pdb.set_trace()
-    return np.array(embedding)
-
+#
+#
+#def get_embedding(word):
+#    try:
+#        return word2vec_model[word]
+#    except Exception, e:
+#        print 'Encoding not found: %s' %(word)
+#        return np.zeros(EMBEDDING_DIM) 
+#
+#
+#def get_embedding_weights():
+#    embedding = []
+#    embedding.append([0]*EMBEDDING_DIM)     # Create a NULL vector entry for the 1st index
+#    for (w_index, word) in sorted(reverse_vocab.iteritems()):
+#        embedding.append(get_embedding(word))
+#    pdb.set_trace()
+#    return np.array(embedding)
+#
 
 def select_tweets():
     # selects the tweets as in mean_glove_embedding method
@@ -92,7 +94,7 @@ def select_tweets():
         if _emb:   # Not a blank tweet
             tweet_return.append(tweet)
     print 'Tweets selected:', len(tweet_return)
-    pdb.set_trace()
+    #pdb.set_trace()
     return tweet_return
 
 
@@ -127,10 +129,12 @@ def Tokenize(tweet):
 
 def clasfication_model(X, y):
     X, Y = gen_data()
-    pdb.set_trace()
+    #pdb.set_trace()
     NO_OF_FOLDS=10
-    logreg = linear_model.LogisticRegression()
-    X, Y = shuffle(X, Y)
+    #logreg = linear_model.LogisticRegression()
+    #logreg = RandomForestClassifier()
+    logreg = GradientBoostingClassifier()
+    X, Y = shuffle(X, Y, random_state=SEED)
     scores1 = cross_val_score(logreg, X, Y, cv=NO_OF_FOLDS, scoring='precision_weighted')
     predictions = cross_val_predict(logreg, X, Y, cv=NO_OF_FOLDS)
     print scores1

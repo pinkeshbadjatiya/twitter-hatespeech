@@ -18,7 +18,7 @@ import operator
 import gensim, sklearn
 from collections import defaultdict
 from batch_gen import batch_gen
-
+import sys
 
 ### Preparing the text data
 texts = []  # list of text samples
@@ -35,19 +35,18 @@ for tweet in tweet_data:
     labels.append(label_map[tweet['label']])
 print('Found %s texts. (samples)' % len(texts))
 
+EMBEDDING_DIM = int(sys.argv[1])
 
 # Load the orginal glove file
 # SHASHANK files
-GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
 
 
 # PINKESH files
-#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
+GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
 
 
-EMBEDDING_DIM = 25
 MAX_NB_WORDS = None
-MAX_SEQUENCE_LENGTH = 20
 VALIDATION_SPLIT = 0.2
 word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
 
@@ -66,13 +65,12 @@ def get_embedding(word):
         print 'Encoding not found: %s' %(word)
         return np.zeros(EMBEDDING_DIM) 
 
-
 def get_embedding_weights():
     embedding = []
     embedding.append([0]*EMBEDDING_DIM)     # Create a NULL vector entry for the 1st index
     for (w_index, word) in sorted(reverse_vocab.iteritems()):
         embedding.append(get_embedding(word))
-    pdb.set_trace()
+    #pdb.set_trace()
     return np.array(embedding)
 
 
@@ -91,7 +89,7 @@ def select_tweets():
         if _emb:   # Not a blank tweet
             tweet_return.append(tweet)
     print 'Tweets selected:', len(tweet_return)
-    pdb.set_trace()
+    #pdb.set_trace()
     return tweet_return
 
 
@@ -108,8 +106,8 @@ def gen_vocab():
                 vocab_index += 1
             freq[word] += 1
     vocab['UNK'] = len(vocab) + 1
-    reverse_vocab[len(vocab)+1] = 'UNK'
-    pdb.set_trace()
+    reverse_vocab[len(vocab)] = 'UNK'
+    #pdb.set_trace()
 
 
 def filter_vocab(k):
@@ -157,7 +155,7 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
 
     # Model Hyperparameters
     n_classes = 3
-    embedding_dim = 20          
+    embedding_dim = EMBEDDING_DIM
     filter_sizes = (3, 4)
     num_filters = 150
     dropout_prob = (0.25, 0.5)
@@ -194,8 +192,9 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
     # main sequential model
     model = Sequential()
     #if not model_variation=='CNN-rand':
-    model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))#,
-                            #weights=[embedding_weights]))
+    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length,
+                                weights=[embedding_weights], trainable=False))
+    #model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))
     model.add(Dropout(dropout_prob[0], input_shape=(sequence_length, embedding_dim)))
     model.add(graph)
     model.add(Dense(hidden_dims))
