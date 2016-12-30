@@ -12,7 +12,7 @@ def get_data():
             tweet_full = json.loads(line)
             tweets.append({
                 'id': tweet_full['id'],
-                'text': tweet_full['text'],
+                'text': tweet_full['text'].lower(),
                 'label': tweet_full['Annotation']
                 })
 

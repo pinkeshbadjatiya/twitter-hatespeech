@@ -5,10 +5,12 @@ from keras.layers import Embedding, Input
 from keras.models import Sequential, Model
 from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, Merge, Convolution1D, MaxPooling1D
 import numpy as np
+from preprocess_twitter import tokenize as tokenizer_g
 import pdb
 from nltk import tokenize
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
+from gensim.parsing.preprocessing import STOPWORDS
 from sklearn.model_selection import KFold
 from keras.utils import np_utils
 import codecs
@@ -36,11 +38,11 @@ print('Found %s texts. (samples)' % len(texts))
 
 # Load the orginal glove file
 # SHASHANK files
-#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
 
 
 # PINKESH files
-GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
+#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt"
 
 
 EMBEDDING_DIM = 25
@@ -70,7 +72,7 @@ def get_embedding_weights():
     embedding.append([0]*EMBEDDING_DIM)     # Create a NULL vector entry for the 1st index
     for (w_index, word) in sorted(reverse_vocab.iteritems()):
         embedding.append(get_embedding(word))
-    #pdb.set_trace()
+    pdb.set_trace()
     return np.array(embedding)
 
 
@@ -82,13 +84,14 @@ def select_tweets():
     tweet_return = []
     for tweet in tweets:
         _emb = 0
-        words = tokenize(tweet['text'])
+        words = Tokenize(tweet['text']).split()
         for w in words:
             if w in word2vec_model:  # Check if embeeding there in GLove model
                 _emb+=1
         if _emb:   # Not a blank tweet
             tweet_return.append(tweet)
     print 'Tweets selected:', len(tweet_return)
+    pdb.set_trace()
     return tweet_return
 
 
@@ -96,7 +99,8 @@ def gen_vocab():
     # Processing
     vocab_index = 1
     for tweet in tweets:
-        words = tokenize(tweet['text'])
+        words = Tokenize(tweet['text']).split()
+        words = [word for word in words if word not in STOPWORDS]
         for word in words:
             if word not in vocab:
                 vocab[word] = vocab_index
@@ -105,12 +109,15 @@ def gen_vocab():
             freq[word] += 1
     vocab['UNK'] = len(vocab) + 1
     reverse_vocab[len(vocab)+1] = 'UNK'
+    pdb.set_trace()
 
 
 def filter_vocab(k):
-    freq_sorted = sorted(vocab_index.items(), key=operator.itemgetter(1))
+    global freq, vocab
+    pdb.set_trace()
+    freq_sorted = sorted(freq.items(), key=operator.itemgetter(1))
     tokens = freq_sorted[:k]
-    vocab = dict(tokens, range(1, len(tokens) + 1))
+    vocab = dict(zip(tokens, range(1, len(tokens) + 1)))
     vocab['UNK'] = len(vocab) + 1
 
 
@@ -128,7 +135,8 @@ def gen_sequence():
 
     X, y = [], []
     for tweet in tweets:
-        words = tokenize(tweet['text'])
+        words = Tokenize(tweet['text']).split()
+        words = [word for word in words if word not in STOPWORDS]
         seq, _emb = [], []
         for word in words:
             seq.append(vocab.get(word, vocab['UNK']))
@@ -137,8 +145,10 @@ def gen_sequence():
     return X, y
 
     
-def tokenize(tweet):
-    return MyTokenizer.tokenize(tweet)
+def Tokenize(tweet):
+    #return MyTokenizer.tokenize(tweet)
+    #pdb.set_trace()
+    return tokenizer_g(tweet)
 
 
 def cnn_model(sequence_length, embedding_dim, embedding_weights):
@@ -184,8 +194,8 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
     # main sequential model
     model = Sequential()
     #if not model_variation=='CNN-rand':
-    model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length,
-                            weights=embedding_weights))
+    model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))#,
+                            #weights=[embedding_weights]))
     model.add(Dropout(dropout_prob[0], input_shape=(sequence_length, embedding_dim)))
     model.add(graph)
     model.add(Dense(hidden_dims))
@@ -196,7 +206,7 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
     model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
     return model
 
-def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=32):
+def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=128):
     cv_object = KFold(n_splits=10, shuffle=True, random_state=42)
     print cv_object
     p, r, f1 = 0., 0., 0.
@@ -251,6 +261,7 @@ if __name__ == "__main__":
     Tweets = select_tweets()
     tweets = Tweets
     gen_vocab()
+    #filter_vocab(20000)
     X, y = gen_sequence()    
     #Y = y.reshape((len(y), 1))
     MAX_SEQUENCE_LENGTH = max(map(lambda x:len(x), X))
