@@ -19,9 +19,9 @@ def mean_glove():
     X, Y = [], []
 
     y_map = {
-            'none': 1,
-            'racism': 2,
-            'sexism': 3
+            'none': 0,
+            'racism': 1,
+            'sexism': 2
         }
 
     # Embeeding Model

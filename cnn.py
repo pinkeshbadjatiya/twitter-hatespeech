@@ -7,6 +7,8 @@ from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, 
 import numpy as np
 import pdb
 from nltk import tokenize
+from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
+from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import KFold
 from keras.utils import np_utils
 import codecs
@@ -95,9 +97,9 @@ def filter_vocab(k):
 
 def gen_sequence():
     y_map = {
-            'none': 1,
-            'racism': 2,
-            'sexism': 3
+            'none': 0,
+            'racism': 1,
+            'sexism': 2
             }
 
     X, y = [], []
@@ -188,7 +190,7 @@ def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=32):
                 x = X_batch[:, :sentence_len]
                 y = X_batch[:, sentence_len]
                 try:
-                    y = np_utils.to_categorical(y)
+                    y = np_utils.to_categorical(y, nb_classes=3)
                 except Exception as e:
                     print e
                     print y
@@ -198,6 +200,8 @@ def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=32):
         #clf.fit(X_train, y_train)
         y_pred = model.predict_on_batch(X_test)
         #y_pred = clf.predict(X_test)
+        print y_pred
+        pdb.set_trace()
         print classification_report(y_test, y_pred)
         print precision_recall_fscore_support(y_test, y_pred)
         print y_pred
