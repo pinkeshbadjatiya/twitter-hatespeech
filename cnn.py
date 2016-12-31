@@ -3,7 +3,7 @@ from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.layers import Embedding, Input
 from keras.models import Sequential, Model
-from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, Merge, Convolution1D, MaxPooling1D
+from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, Merge, Convolution1D, MaxPooling1D, GlobalMaxPooling1D
 import numpy as np
 from preprocess_twitter import tokenize as tokenizer_g
 import pdb
@@ -156,19 +156,15 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
     # Model Hyperparameters
     n_classes = 3
     embedding_dim = EMBEDDING_DIM
-    filter_sizes = (3, 4)
-    num_filters = 150
+    filter_sizes = (3, 4, 5)
+    num_filters = 100
     dropout_prob = (0.25, 0.5)
     hidden_dims = 150
 
     # Training parameters
-    batch_size = 32
-    num_epochs = 100
-    val_split = 0.1
-
     # Word2Vec parameters, see train_word2vec
-    min_word_count = 1  # Minimum word count                        
-    context = 10        # Context window size    
+    #min_word_count = 1  # Minimum word count                        
+    #context = 10        # Context window size    
 
     graph_in = Input(shape=(sequence_length, embedding_dim))
     convs = []
@@ -176,11 +172,11 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
         conv = Convolution1D(nb_filter=num_filters,
                              filter_length=fsz,
                              border_mode='valid',
-                             activation='relu',
-                             subsample_length=1)(graph_in)
-        pool = MaxPooling1D(pool_length=2)(conv)
-        flatten = Flatten()(pool)
-        convs.append(flatten)
+                             activation='relu')(graph_in)
+                             #,subsample_length=1)(graph_in)
+        pool = GlobalMaxPooling1D()(conv)
+        #flatten = Flatten()(pool)
+        convs.append(pool)
         
     if len(filter_sizes)>1:
         out = Merge(mode='concat')(convs)
@@ -192,17 +188,18 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
     # main sequential model
     model = Sequential()
     #if not model_variation=='CNN-rand':
-    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length,
-                                weights=[embedding_weights], trainable=False))
+    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length))#,
+                                #weights=[embedding_weights], trainable=False))
     #model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))
     model.add(Dropout(dropout_prob[0], input_shape=(sequence_length, embedding_dim)))
     model.add(graph)
-    model.add(Dense(hidden_dims))
+    #model.add(Dense(hidden_dims))
     model.add(Dropout(dropout_prob[1]))
     model.add(Activation('relu'))
     model.add(Dense(n_classes))
     model.add(Activation('softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    print model.summary()
     return model
 
 def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=128):
