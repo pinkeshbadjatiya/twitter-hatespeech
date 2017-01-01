@@ -7,6 +7,7 @@ from nltk import tokenize
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import cross_val_score, cross_val_predict
++from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 import pdb
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.utils import shuffle
@@ -39,7 +40,7 @@ for tweet in tweet_data:
 print('Found %s texts. (samples)' % len(texts))
 
 
-# logistic, gradient_boosting, random_forest, svm
+# logistic, gradient_boosting, random_forest, svm, tfidf_svm
 MODEL_TYPE=sys.argv[1]
 EMBEDDING_DIM = int(sys.argv[2])
 
@@ -129,9 +130,8 @@ def get_model(m_type="logistic"):
     return logreg
 
 
-def clasfication_model(X, y, model_type="logistic_regression"):
+def clasfication_model(X, Y, model_type="logistic"):
     NO_OF_FOLDS=10
-    X, Y = gen_data()
     X, Y = shuffle(X, Y, random_state=SEED)
     print "Model Type:", model_type
 
@@ -153,20 +153,22 @@ if __name__ == "__main__":
 
     tweets = select_tweets_whose_embedding_exist()
     #filter_vocab(20000)
-    X, y = gen_data()    
-    clasfication_model(X, y)
 
-    # For TFIDF-SVC
-    # We do not need to run the above code for TFIDF
-    count_vect = CountVectorizer()
-    X_train_counts = count_vect.fit_transform(texts)
-    tfidf_transformer = TfidfTransformer(use_idf=True)
-    X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
-    X = X_train_tfidf
-    print 'Training'
-    classification_model(X, labels)
+    if MODEL_TYPE == "tfidf_svm":
+        # For TFIDF-SVC
+        # We do not need to run the above code for TFIDF
+        # It does not use the filtered data using gen_data()
+        count_vect = CountVectorizer()
+        X_train_counts = count_vect.fit_transform(texts)
+        tfidf_transformer = TfidfTransformer(use_idf=True)
+        X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+        X = X_train_tfidf
+        print 'Training'
+        classification_model(X, labels, model_type='svm')
+    else:
+        X, Y = gen_data()    
+        clasfication_model(X, Y, MODEL_TYPE)
 
-    
     pdb.set_trace()
 
 
