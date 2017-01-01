@@ -3,7 +3,7 @@ from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.layers import Embedding, Input, LSTM
 from keras.models import Sequential, Model
-from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, Merge, Convolution1D, MaxPooling1D, GlobalMaxPooling1D, GlobalAveragePooling1D
+from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, Merge, Convolution1D, MaxPooling1D, GlobalMaxPooling1D
 import numpy as np
 from preprocess_twitter import tokenize as tokenizer_g
 import pdb
@@ -13,14 +13,18 @@ from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
 from gensim.parsing.preprocessing import STOPWORDS
 from sklearn.model_selection import KFold
 from keras.utils import np_utils
+from string import punctuation
 import codecs
 import operator
 import gensim, sklearn
 from collections import defaultdict
 from batch_gen import batch_gen
-from string import punctuation
-from get_similar_words import get_similar_words
 import sys
+
+# Load the orginal glove file
+# SHASHANK files
+#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+
 
 ### Preparing the text data
 texts = []  # list of text samples
@@ -72,11 +76,11 @@ def get_embedding_weights():
     embedding = np.zeros((len(vocab) + 1, EMBEDDING_DIM))
     n = 0
     for k, v in vocab.iteritems():
-    	try:
-    		embedding[v] = word2vec_model[k]
-    	except:
-    		n += 1
-    		pass
+        try:
+            embedding[v] = word2vec_model[k]
+        except:
+            n += 1
+            pass
     print "%d embedding missed"%n
     pdb.set_trace()
     return embedding
@@ -160,33 +164,72 @@ def Tokenize(tweet):
 def shuffle_weights(model):
     weights = model.get_weights()
     weights = [np.random.permutation(w.flat).reshape(w.shape) for w in weights]
+    pdb.set_trace()
     model.set_weights(weights)
 
 
-def fast_text_model(sequence_length):
+def cnn_model(sequence_length, embedding_dim):
+    model_variation = 'CNN-rand'  #  CNN-rand | CNN-non-static | CNN-static
+    print('Model variation is %s' % model_variation)
+
+    # Model Hyperparameters
+    n_classes = NO_OF_CLASSES
+    embedding_dim = EMBEDDING_DIM
+    filter_sizes = (3, 4)
+    num_filters = 50
+    dropout_prob = (0.25, 0.5)
+    hidden_dims = 100
+
+    # Training parameters
+    # Word2Vec parameters, see train_word2vec
+    #min_word_count = 1  # Minimum word count                        
+    #context = 10        # Context window size    
+
+    graph_in = Input(shape=(sequence_length, embedding_dim))
+    convs = []
+    for fsz in filter_sizes:
+        conv = Convolution1D(nb_filter=num_filters,
+                             filter_length=fsz,
+                             border_mode='valid',
+                             activation='relu')(graph_in)
+                             #,subsample_length=1)(graph_in)
+        pool = GlobalMaxPooling1D()(conv)
+        #flatten = Flatten()(pool)
+        convs.append(pool)
+        
+    if len(filter_sizes)>1:
+        out = Merge(mode='concat')(convs)
+    else:
+        out = convs[0]
+
+    graph = Model(input=graph_in, output=out)
+
+    # main sequential model
     model = Sequential()
-    model.add(Embedding(len(vocab)+1, EMBEDDING_DIM, input_length=sequence_length))
-    #model.add(Embedding(len(vocab)+1, EMBEDDING_DIM, input_length=sequence_length, trainable=False))
-    model.add(Dropout(0.5))
-    model.add(GlobalAveragePooling1D())
-    model.add(Dense(3, activation='softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    #if not model_variation=='CNN-rand':
+    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length, trainable=False))
+    model.add(Dropout(dropout_prob[0]))#, input_shape=(sequence_length, embedding_dim)))
+    model.add(graph)
+    model.add(Dropout(dropout_prob[1]))
+    model.add(Activation('relu'))
+    model.add(Dense(n_classes))
+    model.add(Activation('softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     print model.summary()
     return model
 
-def train_fasttext(X, y, model, inp_dim,embedding_weights, epochs=10, batch_size=128):
+def train_CNN(X, y, inp_dim, model, weights, epochs=10, batch_size=128):
     cv_object = KFold(n_splits=10, shuffle=True, random_state=42)
     print cv_object
     p, r, f1 = 0., 0., 0.
     p1, r1, f11 = 0., 0., 0.
     sentence_len = X.shape[1]
-    lookup_table = np.zeros_like(model.layers[0].get_weights()[0])
     for train_index, test_index in cv_object.split(X):
         shuffle_weights(model)
-        #pdb.set_trace()
-        #model.layers[0].set_weights([embedding_weights])
-        X_train, y_train = X[train_index], y[train_index]
+        model.layers[0].set_weights([weights])
+	X_train, y_train = X[train_index], y[train_index]
         X_test, y_test = X[test_index], y[test_index]
+        #pdb.set_trace()
         y_train = y_train.reshape((len(y_train), 1))
         X_temp = np.hstack((X_train, y_train))
         for epoch in xrange(epochs):
@@ -201,11 +244,10 @@ def train_fasttext(X, y, model, inp_dim,embedding_weights, epochs=10, batch_size
                     y_temp = np_utils.to_categorical(y_temp, nb_classes=3)
                 except Exception as e:
                     print e
-                #print x.shape, y.shape
+                    print y_temp
+                print x.shape, y.shape
                 loss, acc = model.train_on_batch(x, y_temp)#, class_weight=class_weights)
                 print loss, acc
-        pdb.set_trace()
-        lookup_table += model.layers[0].get_weights()[0]
         y_pred = model.predict_on_batch(X_test)
         y_pred = np.argmax(y_pred, axis=1)
         print classification_report(y_test, y_pred)
@@ -217,7 +259,7 @@ def train_fasttext(X, y, model, inp_dim,embedding_weights, epochs=10, batch_size
         r1 += recall_score(y_test, y_pred, average='micro')
         f1 += f1_score(y_test, y_pred, average='weighted')
         f11 += f1_score(y_test, y_pred, average='micro')
-    
+
     print "macro results are"
     print "average precision is %f" %(p/10)
     print "average recall is %f" %(r/10)
@@ -227,36 +269,25 @@ def train_fasttext(X, y, model, inp_dim,embedding_weights, epochs=10, batch_size
     print "average precision is %f" %(p1/10)
     print "average recall is %f" %(r1/10)
     print "average f1 is %f" %(f11/10)
-    return lookup_table/float(10)
 
-def check_semantic_sim(embedding_table):
-    reverse_vocab = {v:k for k,v in vocab.iteritems()}
-    while True:
-        print "enter word"
-        word = raw_input()
-        if word == 'exit':
-            return
-        sim_word_idx = get_similar_words(embedding_table, embedding_table[vocab[word]], 10)[1:]
-        sim_words = map(lambda x:reverse_vocab[x[1]], sim_word_idx)
-        print sim_words
-        
 
 if __name__ == "__main__":
 
     Tweets = select_tweets()
     tweets = Tweets
     gen_vocab()
+    #filter_vocab(20000)
     X, y = gen_sequence()    
+    #Y = y.reshape((len(y), 1))
     MAX_SEQUENCE_LENGTH = max(map(lambda x:len(x), X))
     print "max seq length is %d"%(MAX_SEQUENCE_LENGTH)
     data = pad_sequences(X, maxlen=MAX_SEQUENCE_LENGTH)
     y = np.array(y)
-    W = get_embedding_weights()
     data, y = sklearn.utils.shuffle(data, y)
-    model = fast_text_model(data.shape[1])
-    _ = train_fasttext(data, y, model, EMBEDDING_DIM, W)    
-    table = model.layers[0].get_weights()[0]
-    check_semantic_sim(table)
+    W = get_embedding_weights()
+    model = cnn_model(data.shape[1], EMBEDDING_DIM)
+    train_CNN(data, y, EMBEDDING_DIM, model, W)
+    
     pdb.set_trace()
 
 

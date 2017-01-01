@@ -77,7 +77,7 @@ def get_embedding_weights():
             n += 1
             pass
     print "%d embedding missed"%n
-    pdb.set_trace()
+    #pdb.set_trace()
     return embedding
 
 
@@ -158,9 +158,9 @@ def Tokenize(tweet):
 
 def shuffle_weights(model):
     weights = model.get_weights()
-    pdb.set_trace()
+    #pdb.set_trace()
     weights = [np.random.permutation(w.flat).reshape(w.shape) for w in weights]
-    pdb.set_trace()
+    #pdb.set_trace()
     model.set_weights(weights)
 
 def lstm_model(sequence_length, embedding_dim):
@@ -178,7 +178,7 @@ def lstm_model(sequence_length, embedding_dim):
     return model
 
 
-def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=128):
+def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=512):
     cv_object = KFold(n_splits=10, shuffle=True, random_state=42)
     print cv_object
     p, r, f1 = 0., 0., 0.
@@ -186,7 +186,7 @@ def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=128):
     sentence_len = X.shape[1]
     for train_index, test_index in cv_object.split(X):
         shuffle_weights(model)
-        #model.layers[0].set_weights(weights)
+        model.layers[0].set_weights([weights])
 	X_train, y_train = X[train_index], y[train_index]
         X_test, y_test = X[test_index], y[test_index]
         #pdb.set_trace()
@@ -202,7 +202,7 @@ def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=128):
                     print e
                     print y_temp
                 print x.shape, y.shape
-                loss, acc = model.train_on_batch(x, y_temp, class_weight=class_weights)
+                loss, acc = model.train_on_batch(x, y_temp)#, class_weight=class_weights)
                 print loss, acc
         
         y_pred = model.predict_on_batch(X_test)
@@ -244,6 +244,6 @@ if __name__ == "__main__":
     W = get_embedding_weights()
     model = lstm_model(data.shape[1], EMBEDDING_DIM)
     #model = lstm_model(data.shape[1], 25, get_embedding_weights())
-    train_LSTM(data, y, model, EMBEDDING_DIM, model, W)
+    train_LSTM(data, y, model, EMBEDDING_DIM, W)
     
     pdb.set_trace()
