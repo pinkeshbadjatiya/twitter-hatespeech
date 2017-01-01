@@ -1,7 +1,7 @@
 from data_handler import get_data
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Embedding, Input
+from keras.layers import Embedding, Input, LSTM
 from keras.models import Sequential, Model
 from keras.layers import Activation, Dense, Dropout, Embedding, Flatten, Input, Merge, Convolution1D, MaxPooling1D, GlobalMaxPooling1D
 import numpy as np
@@ -13,12 +13,18 @@ from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
 from gensim.parsing.preprocessing import STOPWORDS
 from sklearn.model_selection import KFold
 from keras.utils import np_utils
+from string import punctuation
 import codecs
 import operator
 import gensim, sklearn
 from collections import defaultdict
 from batch_gen import batch_gen
 import sys
+
+# Load the orginal glove file
+# SHASHANK files
+#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+
 
 ### Preparing the text data
 texts = []  # list of text samples
@@ -39,12 +45,12 @@ EMBEDDING_DIM = int(sys.argv[1])
 
 # Load the orginal glove file
 # SHASHANK files
-#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+GLOVE_MODEL_FILE="/home/shashank/DL_NLP/glove-twitter" + str(EMBEDDING_DIM) + "-w2v"
 
 
 # PINKESH files
-GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
-
+#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
+NO_OF_CLASSES=3
 
 MAX_NB_WORDS = None
 VALIDATION_SPLIT = 0.2
@@ -59,6 +65,7 @@ tweets = {}
 
 
 def get_embedding(word):
+    #return
     try:
         return word2vec_model[word]
     except Exception, e:
@@ -66,12 +73,17 @@ def get_embedding(word):
         return np.zeros(EMBEDDING_DIM) 
 
 def get_embedding_weights():
-    embedding = []
-    embedding.append([0]*EMBEDDING_DIM)     # Create a NULL vector entry for the 1st index
-    for (w_index, word) in sorted(reverse_vocab.iteritems()):
-        embedding.append(get_embedding(word))
-    #pdb.set_trace()
-    return np.array(embedding)
+    embedding = np.zeros((len(vocab) + 1, EMBEDDING_DIM))
+    n = 0
+    for k, v in vocab.iteritems():
+        try:
+            embedding[v] = word2vec_model[k]
+        except:
+            n += 1
+            pass
+    print "%d embedding missed"%n
+    pdb.set_trace()
+    return embedding
 
 
 def select_tweets():
@@ -97,8 +109,11 @@ def gen_vocab():
     # Processing
     vocab_index = 1
     for tweet in tweets:
-        words = Tokenize(tweet['text']).split()
+        text = Tokenize(tweet['text'])
+        text = ''.join([c for c in text if c not in punctuation])
+        words = text.split()
         words = [word for word in words if word not in STOPWORDS]
+
         for word in words:
             if word not in vocab:
                 vocab[word] = vocab_index
@@ -119,11 +134,6 @@ def filter_vocab(k):
     vocab['UNK'] = len(vocab) + 1
 
 
-#def gen_embeeding_matrix():
-#    emb_matrix = []
-#    for k, v in vocab.iteritems():
-#        emb_matrix.append(
-
 def gen_sequence():
     y_map = {
             'none': 0,
@@ -133,7 +143,9 @@ def gen_sequence():
 
     X, y = [], []
     for tweet in tweets:
-        words = Tokenize(tweet['text']).split()
+        text = Tokenize(tweet['text'])
+        text = ''.join([c for c in text if c not in punctuation])
+        words = text.split()
         words = [word for word in words if word not in STOPWORDS]
         seq, _emb = [], []
         for word in words:
@@ -149,17 +161,24 @@ def Tokenize(tweet):
     return tokenizer_g(tweet)
 
 
-def cnn_model(sequence_length, embedding_dim, embedding_weights):
+def shuffle_weights(model):
+    weights = model.get_weights()
+    weights = [np.random.permutation(w.flat).reshape(w.shape) for w in weights]
+    pdb.set_trace()
+    model.set_weights(weights)
+
+
+def cnn_model(sequence_length, embedding_dim):
     model_variation = 'CNN-rand'  #  CNN-rand | CNN-non-static | CNN-static
     print('Model variation is %s' % model_variation)
 
     # Model Hyperparameters
-    n_classes = 3
+    n_classes = NO_OF_CLASSES
     embedding_dim = EMBEDDING_DIM
     filter_sizes = (3, 4, 5)
     num_filters = 100
     dropout_prob = (0.25, 0.5)
-    hidden_dims = 150
+    hidden_dims = 100
 
     # Training parameters
     # Word2Vec parameters, see train_word2vec
@@ -188,12 +207,9 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
     # main sequential model
     model = Sequential()
     #if not model_variation=='CNN-rand':
-    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length))#,
-                                #weights=[embedding_weights], trainable=False))
-    #model.add(Embedding(len(vocab), embedding_dim, input_length=sequence_length))
-    model.add(Dropout(dropout_prob[0], input_shape=(sequence_length, embedding_dim)))
+    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length, trainable=False))
+    model.add(Dropout(dropout_prob[0]))#, input_shape=(sequence_length, embedding_dim)))
     model.add(graph)
-    #model.add(Dense(hidden_dims))
     model.add(Dropout(dropout_prob[1]))
     model.add(Activation('relu'))
     model.add(Dense(n_classes))
@@ -202,14 +218,16 @@ def cnn_model(sequence_length, embedding_dim, embedding_weights):
     print model.summary()
     return model
 
-def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=128):
+def train_CNN(X, y, inp_dim, model, weights, epochs=10, batch_size=128):
     cv_object = KFold(n_splits=10, shuffle=True, random_state=42)
     print cv_object
     p, r, f1 = 0., 0., 0.
     p1, r1, f11 = 0., 0., 0.
     sentence_len = X.shape[1]
     for train_index, test_index in cv_object.split(X):
-        X_train, y_train = X[train_index], y[train_index]
+        shuffle_weights(model)
+        model.layers[0].set_weights([weights])
+	X_train, y_train = X[train_index], y[train_index]
         X_test, y_test = X[test_index], y[test_index]
         #pdb.set_trace()
         y_train = y_train.reshape((len(y_train), 1))
@@ -218,19 +236,20 @@ def train_CNN(X, y, model, inp_dim, epochs=10, batch_size=128):
             for X_batch in batch_gen(X_temp, batch_size):
                 x = X_batch[:, :sentence_len]
                 y_temp = X_batch[:, sentence_len]
+		class_weights = {}
+		class_weights[0] = np.where(y_temp == 0)[0].shape[0]/float(len(y_temp))
+		class_weights[1] = np.where(y_temp == 1)[0].shape[0]/float(len(y_temp))
+		class_weights[2] = np.where(y_temp == 2)[0].shape[0]/float(len(y_temp))
                 try:
                     y_temp = np_utils.to_categorical(y_temp, nb_classes=3)
                 except Exception as e:
                     print e
                     print y_temp
                 print x.shape, y.shape
-                loss, acc = model.train_on_batch(x, y_temp)
+                loss, acc = model.train_on_batch(x, y_temp)#, class_weight=class_weights)
                 print loss, acc
-        #clf.fit(X_train, y_train)
         y_pred = model.predict_on_batch(X_test)
         y_pred = np.argmax(y_pred, axis=1)
-        #print y_pred
-        #pdb.set_trace()
         print classification_report(y_test, y_pred)
         print precision_recall_fscore_support(y_test, y_pred)
         print y_pred
@@ -261,11 +280,13 @@ if __name__ == "__main__":
     X, y = gen_sequence()    
     #Y = y.reshape((len(y), 1))
     MAX_SEQUENCE_LENGTH = max(map(lambda x:len(x), X))
+    print "max seq length is %d"%(MAX_SEQUENCE_LENGTH)
     data = pad_sequences(X, maxlen=MAX_SEQUENCE_LENGTH)
     y = np.array(y)
     data, y = sklearn.utils.shuffle(data, y)
-    model = cnn_model(data.shape[1], 25, get_embedding_weights())
-    train_CNN(data, y, model, 25)
+    W = get_embedding_weights()
+    model = cnn_model(data.shape[1], EMBEDDING_DIM)
+    train_CNN(data, y, EMBEDDING_DIM, model, W)
     
     pdb.set_trace()
 

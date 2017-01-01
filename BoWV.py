@@ -11,6 +11,7 @@ import pdb
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.utils import shuffle
 from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.svm import SVC
 from gensim.parsing.preprocessing import STOPWORDS
 from sklearn.model_selection import KFold
 from sklearn import linear_model
@@ -133,7 +134,8 @@ def clasfication_model(X, y):
     NO_OF_FOLDS=10
     #logreg = linear_model.LogisticRegression()
     #logreg = RandomForestClassifier()
-    logreg = GradientBoostingClassifier()
+    #logreg = GradientBoostingClassifier()
+    logreg = SVC(class_weight="balanced", kernel='rbf')
     X, Y = shuffle(X, Y, random_state=SEED)
     scores1 = cross_val_score(logreg, X, Y, cv=NO_OF_FOLDS, scoring='precision_weighted')
     predictions = cross_val_predict(logreg, X, Y, cv=NO_OF_FOLDS)
