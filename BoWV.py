@@ -7,7 +7,7 @@ from nltk import tokenize
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import cross_val_score, cross_val_predict
-+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 import pdb
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.utils import shuffle
@@ -42,7 +42,13 @@ print('Found %s texts. (samples)' % len(texts))
 
 # logistic, gradient_boosting, random_forest, svm, tfidf_svm
 MODEL_TYPE=sys.argv[1]
-EMBEDDING_DIM = int(sys.argv[2])
+MAX_NGRAM_LENGTH = EMBEDDING_DIM = None
+if MODEL_TYPE=="tfidf_svm":
+    MAX_NGRAM_LENGTH=int(sys.argv[2])
+    print 'Max-ngram-length: %d' %(MAX_NGRAM_LENGTH)
+else:
+    EMBEDDING_DIM = int(sys.argv[2])
+    print 'Embedding Dimension: %d' %(EMBEDDING_DIM)
 
 
 ## Load the orginal glove file
@@ -55,8 +61,9 @@ GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.
 SEED=42
 MAX_NB_WORDS = None
 VALIDATION_SPLIT = 0.2
-word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
-word_embed_size = word2vec_model['the'].shape[0]
+if MODEL_TYPE != "tfidf_svm":
+    word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
+    word_embed_size = word2vec_model['the'].shape[0]
 
 
 # Tokenizer to use
@@ -69,7 +76,7 @@ freq = defaultdict(int)
 tweets = {}
 
 
-def select_tweets_whose_embedding_exis_whose_embedding_exist():
+def select_tweets_whose_embedding_exists():
     # selects the tweets as in mean_glove_embedding method
     # Processing
     tweets = get_data()
@@ -115,7 +122,10 @@ def Tokenize(tweet):
     return MyTokenizer(tweet)
 
 def get_model(m_type="logistic"):
-    if m_type == 'logistic':
+    if m_type == "tfidf_svm":
+        # Return SVM only when TFIDF is asked
+        logreg = SVC(class_weight="balanced", kernel='rbf')
+    elif m_type == 'logistic':
         logreg = LogisticRegression()
     elif m_type == "gradient_boosting":
         logreg = GradientBoostingClassifier()
@@ -130,7 +140,7 @@ def get_model(m_type="logistic"):
     return logreg
 
 
-def clasfication_model(X, Y, model_type="logistic"):
+def classification_model(X, Y, model_type="logistic"):
     NO_OF_FOLDS=10
     X, Y = shuffle(X, Y, random_state=SEED)
     print "Model Type:", model_type
@@ -151,24 +161,21 @@ def clasfication_model(X, Y, model_type="logistic"):
 
 if __name__ == "__main__":
 
-    tweets = select_tweets_whose_embedding_exist()
     #filter_vocab(20000)
 
     if MODEL_TYPE == "tfidf_svm":
         # For TFIDF-SVC
         # We do not need to run the above code for TFIDF
         # It does not use the filtered data using gen_data()
-        count_vect = CountVectorizer()
-        X_train_counts = count_vect.fit_transform(texts)
-        tfidf_transformer = TfidfTransformer(use_idf=True)
-        X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+        tfidf_transformer = TfidfVectorizer(use_idf=True, ngram_range=(1, MAX_NGRAM_LENGTH))
+        X_train_tfidf = tfidf_transformer.fit_transform(texts)
         X = X_train_tfidf
-        print 'Training'
-        classification_model(X, labels, model_type='svm')
+        Y = labels
     else:
-        X, Y = gen_data()    
-        clasfication_model(X, Y, MODEL_TYPE)
+        tweets = select_tweets_whose_embedding_exists()
+        X, Y = gen_data()
 
+    classification_model(X, Y, MODEL_TYPE)
     pdb.set_trace()
 
 
