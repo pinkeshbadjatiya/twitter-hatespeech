@@ -8,6 +8,6 @@ def get_similar_words(X, vec, K=1):
     # returns: K top most similar words with score values and their indexes
     scores = cosine_similarity(X, vec)
     scores = sorted([(val, index) for index, val in enumerate(scores.reshape((1,scores.shape[0]))[0])], reverse=True)    
-    scores = scores[:K]
+    scores = scores[1:K]
     return scores
 

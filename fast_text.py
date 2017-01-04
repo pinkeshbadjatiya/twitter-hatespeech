@@ -236,7 +236,7 @@ def check_semantic_sim(embedding_table):
         word = raw_input()
         if word == 'exit':
             return
-        sim_word_idx = get_similar_words(embedding_table, embedding_table[vocab[word]], 10)[1:]
+        sim_word_idx = get_similar_words(embedding_table, embedding_table[vocab[word]], 10)
         sim_words = map(lambda x:reverse_vocab[x[1]], sim_word_idx)
         print sim_words
         

@@ -20,10 +20,9 @@ import gensim, sklearn
 from collections import defaultdict
 from batch_gen import batch_gen
 import sys
+from get_similar_words import get_similar_words
 
-# Load the orginal glove file
-# SHASHANK files
-#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter25-w2v"
+
 
 
 ### Preparing the text data
@@ -43,13 +42,14 @@ print('Found %s texts. (samples)' % len(texts))
 
 EMBEDDING_DIM = int(sys.argv[1])
 
+
 # Load the orginal glove file
 # SHASHANK files
-GLOVE_MODEL_FILE="/home/shashank/DL_NLP/glove-twitter" + str(EMBEDDING_DIM) + "-w2v"
+#GLOVE_MODEL_FILE="/home/shashank/DL_NLP/glove-twitter" + str(EMBEDDING_DIM) + "-w2v"
+## PINKESH files
+GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
 
 
-# PINKESH files
-#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
 NO_OF_CLASSES=3
 
 MAX_NB_WORDS = None
@@ -82,7 +82,7 @@ def get_embedding_weights():
             n += 1
             pass
     print "%d embedding missed"%n
-    pdb.set_trace()
+    #pdb.set_trace()
     return embedding
 
 
@@ -127,7 +127,7 @@ def gen_vocab():
 
 def filter_vocab(k):
     global freq, vocab
-    pdb.set_trace()
+    #pdb.set_trace()
     freq_sorted = sorted(freq.items(), key=operator.itemgetter(1))
     tokens = freq_sorted[:k]
     vocab = dict(zip(tokens, range(1, len(tokens) + 1)))
@@ -164,7 +164,7 @@ def Tokenize(tweet):
 def shuffle_weights(model):
     weights = model.get_weights()
     weights = [np.random.permutation(w.flat).reshape(w.shape) for w in weights]
-    pdb.set_trace()
+    #pdb.set_trace()
     model.set_weights(weights)
 
 
@@ -207,7 +207,7 @@ def cnn_model(sequence_length, embedding_dim):
     # main sequential model
     model = Sequential()
     #if not model_variation=='CNN-rand':
-    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length, trainable=False))
+    model.add(Embedding(len(vocab)+1, embedding_dim, input_length=sequence_length, trainable=True))
     model.add(Dropout(dropout_prob[0]))#, input_shape=(sequence_length, embedding_dim)))
     model.add(graph)
     model.add(Dropout(dropout_prob[1]))
@@ -226,7 +226,7 @@ def train_CNN(X, y, inp_dim, model, weights, epochs=10, batch_size=128):
     sentence_len = X.shape[1]
     for train_index, test_index in cv_object.split(X):
         shuffle_weights(model)
-        model.layers[0].set_weights([weights])
+        #model.layers[0].set_weights([weights])
 	X_train, y_train = X[train_index], y[train_index]
         X_test, y_test = X[test_index], y[test_index]
         #pdb.set_trace()
@@ -270,6 +270,18 @@ def train_CNN(X, y, inp_dim, model, weights, epochs=10, batch_size=128):
     print "average recall is %f" %(r1/10)
     print "average f1 is %f" %(f11/10)
 
+def check_semantic_sim(embedding_table):
+    reverse_vocab = {v:k for k,v in vocab.iteritems()}
+    while True:
+        print "enter word"
+        word = raw_input()
+        if word == 'exit':
+            return
+        sim_words_idx = get_similar_words(embedding_table, embedding_table[vocab[word]], 10)
+        sim_words = map(lambda x:reverse_vocab[x[1]], sim_words_idx)
+        print sim_words_idx
+        print sim_words
+
 
 if __name__ == "__main__":
 
@@ -288,6 +300,8 @@ if __name__ == "__main__":
     model = cnn_model(data.shape[1], EMBEDDING_DIM)
     train_CNN(data, y, EMBEDDING_DIM, model, W)
     
+    table_weights = model.layers[0].get_weights()[0]
+    check_semantic_sim(table_weights)
     pdb.set_trace()
 
 
