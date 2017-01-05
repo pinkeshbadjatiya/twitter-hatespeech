@@ -19,8 +19,6 @@ final_emb = {}
 for i, emb in enumerate(np.load("embedding.npy")):
     final_emb[reverse_vocab[str(i)].encode("utf-8")] = emb
 
-pdb.set_trace()
-
 vec = []
 for w in words:
     vec.append(initial_emb[w])
@@ -49,12 +47,13 @@ padding=0.0001
 xmin, xmax = min(out[:, 0]), max(out[:, 0])
 ymin, ymax = min(out[:, 1]), max(out[:, 1])
 
-plt.scatter(A[:, 0], A[:, 1], c='red', s=area, alpha=0.5)
-plt.scatter(B[:, 0], B[:, 1], c='green', s=area, alpha=0.5)
+fig, ax = plt.subplots()
 
 for (color, label, data) in [('red', 'GloVe', A), ('green', 'FastText+GloVe+Dyn', B)]:
-    plt.scatter(data[:,0], data[:,1], c=color, s=area, label=label,
-                alpha=0.3, edgecolors='none')
+    ax.scatter(data[:,0], data[:,1], c=color, s=area, label=label,
+                                  alpha=0.3, edgecolors='none')
+    for (row, word) in zip(data, words):
+        ax.annotate(word, xy=(row[0], row[1]), xytext=(row[0], row[1]),)
 
 plt.axis([xmin-padding,xmax+padding,ymin-padding,ymax+padding])
 plt.legend()
