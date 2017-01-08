@@ -6,7 +6,6 @@ from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score,
 from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import cross_val_score, cross_val_predict
 from sklearn.feature_extraction.text import TfidfVectorizer
-import pdb
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.utils import shuffle
 from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
@@ -39,18 +38,15 @@ print('Found %s texts. (samples)' % len(texts))
 
 
 # logistic, gradient_boosting, random_forest, svm_linear, svm_rbf
-MODEL_TYPE=sys.argv[1]
+GLOVE_MODEL_FILE = str(sys.argv[1])
 EMBEDDING_DIM = int(sys.argv[2])
+MODEL_TYPE=sys.argv[3]
+print 'GLOVE embedding: %s' %(GLOVE_MODEL_FILE)
 print 'Embedding Dimension: %d' %(EMBEDDING_DIM)
 
-## Load the orginal glove file
-## SHASHANK files
-#GLOVE_MODEL_FILE="/home/shashank/data/embeddings/GloVe/glove-twitter" + str(EMBEDDING_DIM)+ "-w2v"
-## PINKESH files
-GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
+
 word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
 word_embed_size = word2vec_model['the'].shape[0]
-
 
 
 SEED=42
@@ -79,7 +75,6 @@ def select_tweets_whose_embedding_exists():
         if _emb:   # Not a blank tweet
             tweet_return.append(tweet)
     print 'Tweets selected:', len(tweet_return)
-    #pdb.set_trace()
     return tweet_return
 
 
@@ -141,9 +136,6 @@ def classification_model(X, Y, model_type="logistic"):
     scores3 = cross_val_score(get_model(model_type), X, Y, cv=NO_OF_FOLDS, scoring='f1_weighted')
     print "F1-score(avg): %0.3f (+/- %0.3f)" % (scores3.mean(), scores3.std() * 2)
 
-    pdb.set_trace()
-
-
 
 if __name__ == "__main__":
 
@@ -153,6 +145,5 @@ if __name__ == "__main__":
     X, Y = gen_data()
 
     classification_model(X, Y, MODEL_TYPE)
-    pdb.set_trace()
 
 

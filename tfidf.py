@@ -1,7 +1,6 @@
 from data_handler import get_data
 import sys
 import numpy as np
-import pdb
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, recall_score, precision_score, classification_report, precision_recall_fscore_support
 from sklearn.ensemble  import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import cross_val_score, cross_val_predict
@@ -55,47 +54,6 @@ freq = defaultdict(int)
 tweets = {}
 
 
-#def select_tweets_whose_embedding_exists():
-#    # selects the tweets as in mean_glove_embedding method
-#    # Processing
-#    tweets = get_data()
-#    X, Y = [], []
-#    tweet_return = []
-#    for tweet in tweets:
-#        _emb = 0
-#        words = glove_tokenize(tweet['text'])
-#        for w in words:
-#            if w in word2vec_model:  # Check if embeeding there in GLove model
-#                _emb+=1
-#        if _emb:   # Not a blank tweet
-#            tweet_return.append(tweet)
-#    print 'Tweets selected:', len(tweet_return)
-#    #pdb.set_trace()
-#    return tweet_return
-#
-#
-#def gen_data():
-#    y_map = {
-#            'none': 0,
-#            'racism': 1,
-#            'sexism': 2
-#            }
-#
-#    X, y = [], []
-#    for tweet in tweets:
-#        words = glove_tokenize(tweet['text'])
-#        emb = np.zeros(word_embed_size)
-#        for word in words:
-#            try:
-#                emb += word2vec_model[word]
-#            except:
-#                pass
-#        emb /= len(words)
-#        X.append(emb)
-#        y.append(y_map[tweet['label']])
-#    return X, y
-
-    
 def get_model(m_type=None):
     if not m_type:
         print 'Please specify a model type'
@@ -133,8 +91,6 @@ def classification_model(X, Y, model_type="logistic"):
     scores3 = cross_val_score(get_model(model_type), X, Y, cv=NO_OF_FOLDS, scoring='f1_weighted')
     print "F1-score(avg): %0.3f (+/- %0.3f)" % (scores3.mean(), scores3.std() * 2)
 
-    pdb.set_trace()
-
 
 
 if __name__ == "__main__":
@@ -151,6 +107,3 @@ if __name__ == "__main__":
     Y = labels
 
     classification_model(X, Y, MODEL_TYPE)
-    pdb.set_trace()
-
-
