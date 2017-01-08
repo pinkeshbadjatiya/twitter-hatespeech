@@ -41,11 +41,11 @@ EMBEDDING_DIM = int(sys.argv[1])
 
 # Load the orginal glove file
 # SHASHANK files
-GLOVE_MODEL_FILE="/home/shashank/DL_NLP/glove-twitter" + str(EMBEDDING_DIM) + "-w2v"
+#GLOVE_MODEL_FILE="/home/shashank/DL_NLP/glove-twitter" + str(EMBEDDING_DIM) + "-w2v"
 
 
 # PINKESH files
-#GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
+GLOVE_MODEL_FILE="/home/pinkesh/DATASETS/glove-twitter/GENSIM.glove.twitter.27B." + str(EMBEDDING_DIM) + "d.txt"
 NO_OF_CLASSES=3
 
 MAX_NB_WORDS = None
@@ -78,7 +78,7 @@ def get_embedding_weights():
     		n += 1
     		pass
     print "%d embedding missed"%n
-    pdb.set_trace()
+    #pdb.set_trace()
     return embedding
 
 
@@ -123,7 +123,7 @@ def gen_vocab():
 
 def filter_vocab(k):
     global freq, vocab
-    pdb.set_trace()
+    #pdb.set_trace()
     freq_sorted = sorted(freq.items(), key=operator.itemgetter(1))
     tokens = freq_sorted[:k]
     vocab = dict(zip(tokens, range(1, len(tokens) + 1)))
@@ -204,7 +204,7 @@ def train_fasttext(X, y, model, inp_dim,embedding_weights, epochs=10, batch_size
                 #print x.shape, y.shape
                 loss, acc = model.train_on_batch(x, y_temp)#, class_weight=class_weights)
                 print loss, acc
-        pdb.set_trace()
+        #pdb.set_trace()
         lookup_table += model.layers[0].get_weights()[0]
         y_pred = model.predict_on_batch(X_test)
         y_pred = np.argmax(y_pred, axis=1)
@@ -229,17 +229,24 @@ def train_fasttext(X, y, model, inp_dim,embedding_weights, epochs=10, batch_size
     print "average f1 is %f" %(f11/10)
     return lookup_table/float(10)
 
-def check_semantic_sim(embedding_table):
+
+def check_semantic_sim(embedding_table, word):
     reverse_vocab = {v:k for k,v in vocab.iteritems()}
+    sim_word_idx = get_similar_words(embedding_table, embedding_table[vocab[word]], 25)
+    sim_words = map(lambda x:reverse_vocab[x[1]], sim_word_idx)
+    print sim_words
+        
+def tryWord(embedding_table):
     while True:
         print "enter word"
         word = raw_input()
-        if word == 'exit':
+        if word == "pdb":
+            pdb.set_trace()
+        elif word == 'exit':
             return
-        sim_word_idx = get_similar_words(embedding_table, embedding_table[vocab[word]], 10)
-        sim_words = map(lambda x:reverse_vocab[x[1]], sim_word_idx)
-        print sim_words
-        
+        else:
+            check_semantic_sim(embedding_table, word)
+
 
 if __name__ == "__main__":
 
@@ -256,7 +263,8 @@ if __name__ == "__main__":
     model = fast_text_model(data.shape[1])
     _ = train_fasttext(data, y, model, EMBEDDING_DIM, W)    
     table = model.layers[0].get_weights()[0]
-    check_semantic_sim(table)
+    #check_semantic_sim(table)
+    tryWord(table)
     pdb.set_trace()
 
 
