@@ -19,9 +19,9 @@ Use your favourite tweet crawler and download the data and place the tweets in t
 
 ### Instructions to run
 
-To run a model (<MODEL>) for training, use 
+To run a model ([MODEL]) for training, use 
 
-'python <MODEL> <WORD_EMBED_DIM>'
+'python [MODEL] [WORD_EMBED_DIM']
 
 ### TO-DOs
 
