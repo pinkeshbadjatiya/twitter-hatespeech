@@ -50,7 +50,7 @@ NO_OF_CLASSES=3
 MAX_NB_WORDS = None
 VALIDATION_SPLIT = 0.2
 word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
-
+np.random.seed(42)
 
 # vocab generation
 MyTokenizer = tokenize.casual.TweetTokenizer(strip_handles=True, reduce_len=True)
@@ -65,7 +65,7 @@ def get_embedding(word):
         return word2vec_model[word]
     except Exception, e:
         print 'Encoding not found: %s' %(word)
-        return np.zeros(EMBEDDING_DIM) 
+        return np.zeros(EMBEDDING_DIM)
 
 def get_embedding_weights():
     embedding = np.zeros((len(vocab) + 1, EMBEDDING_DIM))
@@ -149,7 +149,7 @@ def gen_sequence():
         y.append(y_map[tweet['label']])
     return X, y
 
-    
+
 def Tokenize(tweet):
     #return MyTokenizer.tokenize(tweet)
     #pdb.set_trace()
@@ -204,7 +204,7 @@ def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=512):
                 print x.shape, y.shape
                 loss, acc = model.train_on_batch(x, y_temp)#, class_weight=class_weights)
                 print loss, acc
-        
+
         y_pred = model.predict_on_batch(X_test)
         y_pred = np.argmax(y_pred, axis=1)
         print classification_report(y_test, y_pred)
@@ -216,7 +216,7 @@ def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=512):
         r1 += recall_score(y_test, y_pred, average='micro')
         f1 += f1_score(y_test, y_pred, average='weighted')
         f11 += f1_score(y_test, y_pred, average='micro')
-	
+
 
     print "macro results are"
     print "average precision is %f" %(p/10)
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     tweets = Tweets
     gen_vocab()
     #filter_vocab(20000)
-    X, y = gen_sequence()    
+    X, y = gen_sequence()
     #Y = y.reshape((len(y), 1))
     MAX_SEQUENCE_LENGTH = max(map(lambda x:len(x), X))
     print "max seq length is %d"%(MAX_SEQUENCE_LENGTH)
@@ -245,5 +245,5 @@ if __name__ == "__main__":
     model = lstm_model(data.shape[1], EMBEDDING_DIM)
     #model = lstm_model(data.shape[1], 25, get_embedding_weights())
     train_LSTM(data, y, model, EMBEDDING_DIM, W)
-    
+
     pdb.set_trace()

@@ -62,7 +62,7 @@ MyTokenizer = tokenize.casual.TweetTokenizer(strip_handles=True, reduce_len=True
 vocab, reverse_vocab = {}, {}
 freq = defaultdict(int)
 tweets = {}
-
+np.random.seed(42)
 
 def get_embedding(word):
     #return
@@ -70,7 +70,7 @@ def get_embedding(word):
         return word2vec_model[word]
     except Exception, e:
         print 'Encoding not found: %s' %(word)
-        return np.zeros(EMBEDDING_DIM) 
+        return np.zeros(EMBEDDING_DIM)
 
 def get_embedding_weights():
     embedding = np.zeros((len(vocab) + 1, EMBEDDING_DIM))
@@ -154,7 +154,7 @@ def gen_sequence():
         y.append(y_map[tweet['label']])
     return X, y
 
-    
+
 def Tokenize(tweet):
     #return MyTokenizer.tokenize(tweet)
     #pdb.set_trace()
@@ -182,8 +182,8 @@ def cnn_model(sequence_length, embedding_dim):
 
     # Training parameters
     # Word2Vec parameters, see train_word2vec
-    #min_word_count = 1  # Minimum word count                        
-    #context = 10        # Context window size    
+    #min_word_count = 1  # Minimum word count
+    #context = 10        # Context window size
 
     graph_in = Input(shape=(sequence_length, embedding_dim))
     convs = []
@@ -196,7 +196,7 @@ def cnn_model(sequence_length, embedding_dim):
         pool = GlobalMaxPooling1D()(conv)
         #flatten = Flatten()(pool)
         convs.append(pool)
-        
+
     if len(filter_sizes)>1:
         out = Merge(mode='concat')(convs)
     else:
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     tweets = Tweets
     gen_vocab()
     #filter_vocab(20000)
-    X, y = gen_sequence()    
+    X, y = gen_sequence()
     #Y = y.reshape((len(y), 1))
     MAX_SEQUENCE_LENGTH = max(map(lambda x:len(x), X))
     print "max seq length is %d"%(MAX_SEQUENCE_LENGTH)
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     W = get_embedding_weights()
     model = cnn_model(data.shape[1], EMBEDDING_DIM)
     train_CNN(data, y, EMBEDDING_DIM, model, W)
-    
+
     pdb.set_trace()
 
 

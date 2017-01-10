@@ -38,7 +38,7 @@ for tweet in tweet_data:
 print('Found %s texts. (samples)' % len(texts))
 
 EMBEDDING_DIM = int(sys.argv[1])
-
+np.random.seed(42)
 # Load the orginal glove file
 # SHASHANK files
 #GLOVE_MODEL_FILE="/home/shashank/DL_NLP/glove-twitter" + str(EMBEDDING_DIM) + "-w2v"
@@ -66,7 +66,7 @@ def get_embedding(word):
         return word2vec_model[word]
     except Exception, e:
         print 'Encoding not found: %s' %(word)
-        return np.zeros(EMBEDDING_DIM) 
+        return np.zeros(EMBEDDING_DIM)
 
 def get_embedding_weights():
     embedding = np.zeros((len(vocab) + 1, EMBEDDING_DIM))
@@ -150,7 +150,7 @@ def gen_sequence():
         y.append(y_map[tweet['label']])
     return X, y
 
-    
+
 def Tokenize(tweet):
     #return MyTokenizer.tokenize(tweet)
     #pdb.set_trace()
@@ -217,7 +217,7 @@ def train_fasttext(X, y, model, inp_dim,embedding_weights, epochs=10, batch_size
         r1 += recall_score(y_test, y_pred, average='micro')
         f1 += f1_score(y_test, y_pred, average='weighted')
         f11 += f1_score(y_test, y_pred, average='micro')
-    
+
     print "macro results are"
     print "average precision is %f" %(p/10)
     print "average recall is %f" %(r/10)
@@ -235,7 +235,7 @@ def check_semantic_sim(embedding_table, word):
     sim_word_idx = get_similar_words(embedding_table, embedding_table[vocab[word]], 25)
     sim_words = map(lambda x:reverse_vocab[x[1]], sim_word_idx)
     print sim_words
-        
+
 def tryWord(embedding_table):
     while True:
         print "enter word"
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     Tweets = select_tweets()
     tweets = Tweets
     gen_vocab()
-    X, y = gen_sequence()    
+    X, y = gen_sequence()
     MAX_SEQUENCE_LENGTH = max(map(lambda x:len(x), X))
     print "max seq length is %d"%(MAX_SEQUENCE_LENGTH)
     data = pad_sequences(X, maxlen=MAX_SEQUENCE_LENGTH)
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     W = get_embedding_weights()
     data, y = sklearn.utils.shuffle(data, y)
     model = fast_text_model(data.shape[1])
-    _ = train_fasttext(data, y, model, EMBEDDING_DIM, W)    
+    _ = train_fasttext(data, y, model, EMBEDDING_DIM, W)
     table = model.layers[0].get_weights()[0]
     #check_semantic_sim(table)
     tryWord(table)
