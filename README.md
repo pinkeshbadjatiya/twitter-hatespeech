@@ -24,7 +24,7 @@ Use your favourite tweet crawler and download the data and place the tweets in t
 
 To run a model ([MODEL]) for training, use the following instructions mentioned below. Use appropriate parameter settings to test the variations of the model.
 
-- BagOfWords models (BoWV.py)
+- BagOfWords models - **BoWV.py**
 ```
 usage: BoWV.py [-h] -m
                {logistic,gradient_boosting,random_forest,svm,svm_linear} -f
@@ -48,7 +48,7 @@ optional arguments:
   --class_weight CLASS_WEIGHT
 ```
 
-- TF-IDF based models (tfidf.py)
+- TF-IDF based models - **tfidf.py**
 ```
 usage: tfidf.py [-h] -m
                 {tfidf_svm,tfidf_svm_linear,tfidf_logistic,tfidf_gradient_boosting,tfidf_random_forest}
@@ -73,12 +73,13 @@ optional arguments:
   --use-inverse-doc-freq
 ```
 
-- LSTM(RNN) based methods (lstm.py)
+- LSTM(RNN) based methods - **lstm.py**
 ```
 usage: lstm.py [-h] -f EMBEDDINGFILE -d DIMENSION --tokenizer {glove,nltk}
-               --loss LOSS --optimizer OPTIMIZER [-s SEED] [--folds FOLDS]
-               [--kernel KERNEL] [--class_weight CLASS_WEIGHT]
-               --initialize-weights {random,glove} [--learn-embeddings]
+               --loss LOSS --optimizer OPTIMIZER --epochs EPOCHS --batch-size
+               BATCH_SIZE [-s SEED] [--folds FOLDS] [--kernel KERNEL]
+               [--class_weight CLASS_WEIGHT] --initialize-weights
+               {random,glove} [--learn-embeddings] [--scale-loss-function]
 
 LSTM based models for twitter Hate speech detection
 
@@ -89,19 +90,53 @@ optional arguments:
   --tokenizer {glove,nltk}
   --loss LOSS
   --optimizer OPTIMIZER
+  --epochs EPOCHS
+  --batch-size BATCH_SIZE
   -s SEED, --seed SEED
   --folds FOLDS
   --kernel KERNEL
   --class_weight CLASS_WEIGHT
   --initialize-weights {random,glove}
   --learn-embeddings
+  --scale-loss-function
 ```
+
+- CNN based models - **cnn.py**
+```
+usage: cnn.py [-h] -f EMBEDDINGFILE -d DIMENSION --tokenizer {glove,nltk}
+              --loss LOSS --optimizer OPTIMIZER --epochs EPOCHS --batch-size
+              BATCH_SIZE [-s SEED] [--folds FOLDS]
+              [--class_weight CLASS_WEIGHT] --initialize-weights
+              {random,glove} [--learn-embeddings] [--scale-loss-function]
+
+CNN based models for twitter Hate speech detection
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f EMBEDDINGFILE, --embeddingfile EMBEDDINGFILE
+  -d DIMENSION, --dimension DIMENSION
+  --tokenizer {glove,nltk}
+  --loss LOSS
+  --optimizer OPTIMIZER
+  --epochs EPOCHS
+  --batch-size BATCH_SIZE
+  -s SEED, --seed SEED
+  --folds FOLDS
+  --class_weight CLASS_WEIGHT
+  --initialize-weights {random,glove}
+  --learn-embeddings
+  --scale-loss-function
+```
+
+
 
 ### Examples:
 ```
 python BoWV.py --model logistic --seed 42 -f glove.twitter.27b.25d.txt -d 25 --seed 42 --folds 10
 python tfidf.py -m tfidf_svm_linear --max_ngram 3 --tokenizer glove --loss squared_hinge
-python lstm.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 25 --tokenizer glove --loss categorical_crossentropy --optimizer adam --initialize-weights random --learn-embeddings
+python lstm.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 25 --tokenizer glove --loss categorical_crossentropy --optimizer adam --initialize-weights random --learn-embeddings --epochs 10 --batch-size 512
+python cnn.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 25 --tokenizer nltk --loss categorical_crossentropy --optimizer adam --epochs 10 --batch-size 128 --initialize-weights random --scale-loss-function
+
 ```
 
 ### TO-DOs
