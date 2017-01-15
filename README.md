@@ -23,7 +23,9 @@ To run a model ([MODEL]) for training, use
 
 
 For BoWV.py
-usage: BoWV.py [-h] -m MODEL -f EMBEDDINGFILE -d DIMENSION [-s SEED]
+usage: BoWV.py [-h] -m
+               {logistic,gradient_boosting,random_forest,svm,svm_linear} -f
+               EMBEDDINGFILE -d DIMENSION --tokenizer {glove,nltk} [-s SEED]
                [--folds FOLDS] [--estimators ESTIMATORS] [--loss LOSS]
                [--kernel KERNEL] [--class_weight CLASS_WEIGHT]
 
@@ -31,16 +33,16 @@ BagOfWords model for twitter Hate speech detection
 
 optional arguments:
   -h, --help            show this help message and exit
-  -m MODEL, --model MODEL
+  -m {logistic,gradient_boosting,random_forest,svm,svm_linear}, --model {logistic,gradient_boosting,random_forest,svm,svm_linear}
   -f EMBEDDINGFILE, --embeddingfile EMBEDDINGFILE
   -d DIMENSION, --dimension DIMENSION
+  --tokenizer {glove,nltk}
   -s SEED, --seed SEED
   --folds FOLDS
   --estimators ESTIMATORS
   --loss LOSS
   --kernel KERNEL
   --class_weight CLASS_WEIGHT
-
 
 
 For tfidf.py
@@ -66,6 +68,31 @@ optional arguments:
   --kernel KERNEL
   --class_weight CLASS_WEIGHT
   --use-inverse-doc-freq
+
+
+For lstm.py
+usage: lstm.py [-h] -f EMBEDDINGFILE -d DIMENSION --tokenizer {glove,nltk}
+               --loss LOSS --optimizer OPTIMIZER [-s SEED] [--folds FOLDS]
+               [--kernel KERNEL] [--class_weight CLASS_WEIGHT]
+               --initialize-weights {random,glove} [--learn-embeddings]
+
+LSTM based models for twitter Hate speech detection
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f EMBEDDINGFILE, --embeddingfile EMBEDDINGFILE
+  -d DIMENSION, --dimension DIMENSION
+  --tokenizer {glove,nltk}
+  --loss LOSS
+  --optimizer OPTIMIZER
+  -s SEED, --seed SEED
+  --folds FOLDS
+  --kernel KERNEL
+  --class_weight CLASS_WEIGHT
+  --initialize-weights {random,glove}
+  --learn-embeddings
+
+
 
 
 'python [MODEL] [WORD_EMBED_DIM']

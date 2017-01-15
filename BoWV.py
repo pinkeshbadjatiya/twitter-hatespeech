@@ -20,6 +20,7 @@ import gensim, sklearn
 from collections import defaultdict
 from batch_gen import batch_gen
 from my_tokenizer import glove_tokenize
+from nltk.tokenize import TweetTokenizer
 
 
 ### Preparing the text data
@@ -36,6 +37,7 @@ CLASS_WEIGHT = None
 N_ESTIMATORS = None
 LOSS_FUN = None
 KERNEL = None
+TOKENIZER = None
 
 SEED=42
 MAX_NB_WORDS = None
@@ -58,7 +60,7 @@ def select_tweets_whose_embedding_exists():
     tweet_return = []
     for tweet in tweets:
         _emb = 0
-        words = glove_tokenize(tweet['text'].lower())
+        words = TOKENIZER(tweet['text'].lower())
         for w in words:
             if w in word2vec_model:  # Check if embeeding there in GLove model
                 _emb+=1
@@ -100,7 +102,7 @@ def get_model(m_type=None):
         logreg = GradientBoostingClassifier(loss=LOSS_FUN, n_estimators=N_ESTIMATORS)
     elif m_type == "random_forest":
         logreg = RandomForestClassifier(class_weight=CLASS_WEIGHT, n_estimators=N_ESTIMATORS)
-    elif m_type == "svm_rbf":
+    elif m_type == "svm":
         logreg = SVC(class_weight=CLASS_WEIGHT, kernel=KERNEL)
     elif m_type == "svm_linear":
         logreg = LinearSVC(loss=LOSS_FUN, class_weight=CLASS_WEIGHT)
@@ -129,9 +131,10 @@ def classification_model(X, Y, model_type=None):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='BagOfWords model for twitter Hate speech detection')
-    parser.add_argument('-m', '--model', required=True)
+    parser.add_argument('-m', '--model', choices=['logistic', 'gradient_boosting', 'random_forest', 'svm', 'svm_linear'], required=True)
     parser.add_argument('-f', '--embeddingfile', required=True)
     parser.add_argument('-d', '--dimension', required=True)
+    parser.add_argument('--tokenizer', choices=['glove', 'nltk'], required=True)
     parser.add_argument('-s', '--seed', default=SEED)
     parser.add_argument('--folds', default=NO_OF_FOLDS)
     parser.add_argument('--estimators', default=N_ESTIMATORS)
@@ -150,6 +153,10 @@ if __name__ == "__main__":
     N_ESTIMATORS = int(args.estimators)
     LOSS_FUN = args.loss
     KERNEL = args.kernel
+    if args.tokenizer == "glove":
+        TOKENIZER = glove_tokenize
+    elif args.tokenizer == "nltk":
+        TOKENIZER = TweetTokenizer().tokenize
 
     print 'GLOVE embedding: %s' %(GLOVE_MODEL_FILE)
     print 'Embedding Dimension: %d' %(EMBEDDING_DIM)
