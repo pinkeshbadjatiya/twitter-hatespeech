@@ -1,4 +1,5 @@
 from data_handler import get_data
+import argparse
 import sys
 import numpy as np
 import pdb
@@ -25,39 +26,28 @@ from my_tokenizer import glove_tokenize
 texts = []  # list of text samples
 labels_index = {}  # dictionary mapping label name to numeric id
 labels = []  # list of label ids
-label_map = {
-        'none': 0,
-        'racism': 1,
-        'sexism': 2
-    }
-tweet_data = get_data()
-for tweet in tweet_data:
-    texts.append(tweet['text'].lower())
-    labels.append(label_map[tweet['label']])
-print('Found %s texts. (samples)' % len(texts))
 
 
 # logistic, gradient_boosting, random_forest, svm_linear, svm_rbf
-GLOVE_MODEL_FILE = str(sys.argv[1])
-EMBEDDING_DIM = int(sys.argv[2])
-MODEL_TYPE=sys.argv[3]
-print 'GLOVE embedding: %s' %(GLOVE_MODEL_FILE)
-print 'Embedding Dimension: %d' %(EMBEDDING_DIM)
-
-
-word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
-word_embed_size = word2vec_model['the'].shape[0]
-
+GLOVE_MODEL_FILE = None
+EMBEDDING_DIM = None
+MODEL_TYPE = None
+CLASS_WEIGHT = None
+N_ESTIMATORS = None
+LOSS_FUN = None
+KERNEL = None
 
 SEED=42
 MAX_NB_WORDS = None
-VALIDATION_SPLIT = 0.2
+NO_OF_FOLDS=10
 
 
 # vocab generation
 vocab, reverse_vocab = {}, {}
 freq = defaultdict(int)
 tweets = {}
+
+word2vec_model = None
 
 
 def select_tweets_whose_embedding_exists():
@@ -68,7 +58,7 @@ def select_tweets_whose_embedding_exists():
     tweet_return = []
     for tweet in tweets:
         _emb = 0
-        words = glove_tokenize(tweet['text'])
+        words = glove_tokenize(tweet['text'].lower())
         for w in words:
             if w in word2vec_model:  # Check if embeeding there in GLove model
                 _emb+=1
@@ -87,8 +77,8 @@ def gen_data():
 
     X, y = [], []
     for tweet in tweets:
-        words = glove_tokenize(tweet['text'])
-        emb = np.zeros(word_embed_size)
+        words = glove_tokenize(tweet['text'].lower())
+        emb = np.zeros(EMBEDDING_DIM)
         for word in words:
             try:
                 emb += word2vec_model[word]
@@ -107,13 +97,13 @@ def get_model(m_type=None):
     if m_type == 'logistic':
         logreg = LogisticRegression()
     elif m_type == "gradient_boosting":
-        logreg = GradientBoostingClassifier()
+        logreg = GradientBoostingClassifier(loss=LOSS_FUN, n_estimators=N_ESTIMATORS)
     elif m_type == "random_forest":
-        logreg = RandomForestClassifier()
+        logreg = RandomForestClassifier(class_weight=CLASS_WEIGHT, n_estimators=N_ESTIMATORS)
     elif m_type == "svm_rbf":
-        logreg = SVC(class_weight="balanced", kernel='rbf')
+        logreg = SVC(class_weight=CLASS_WEIGHT, kernel=KERNEL)
     elif m_type == "svm_linear":
-        logreg = LinearSVC(class_weight="balanced")
+        logreg = LinearSVC(loss=LOSS_FUN, class_weight=CLASS_WEIGHT)
     else:
         print "ERROR: Please specify a correct model"
         return None
@@ -121,8 +111,7 @@ def get_model(m_type=None):
     return logreg
 
 
-def classification_model(X, Y, model_type="logistic"):
-    NO_OF_FOLDS=10
+def classification_model(X, Y, model_type=None):
     X, Y = shuffle(X, Y, random_state=SEED)
     print "Model Type:", model_type
 
@@ -140,10 +129,34 @@ def classification_model(X, Y, model_type="logistic"):
 if __name__ == "__main__":
 
     #filter_vocab(20000)
+    parser = argparse.ArgumentParser(description='BagOfWords model for twitter Hate speech detection')
+    parser.add_argument('-m', '--model', required=True)
+    parser.add_argument('-f', '--embeddingfile', required=True)
+    parser.add_argument('-d', '--dimension', required=True)
+    parser.add_argument('-s', '--seed', default=SEED)
+    parser.add_argument('--folds', default=NO_OF_FOLDS)
+    parser.add_argument('--estimators', default=N_ESTIMATORS)
+    parser.add_argument('--loss', default=LOSS_FUN)
+    parser.add_argument('--kernel', default=KERNEL)
+    parser.add_argument('--class_weight')
+
+
+    args = parser.parse_args()
+    MODEL_TYPE = args.model
+    GLOVE_MODEL_FILE = args.embeddingfile
+    EMBEDDING_DIM = int(args.dimension)
+    SEED = int(args.seed)
+    NO_OF_FOLDS = int(args.folds)
+    CLASS_WEIGHT = args.class_weight
+    N_ESTIMATORS = int(args.estimators)
+    LOSS_FUN = args.loss
+    KERNEL = args.kernel
+
+    print 'GLOVE embedding: %s' %(GLOVE_MODEL_FILE)
+    print 'Embedding Dimension: %d' %(EMBEDDING_DIM)
+    word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
 
     tweets = select_tweets_whose_embedding_exists()
     X, Y = gen_data()
 
     classification_model(X, Y, MODEL_TYPE)
-
-
