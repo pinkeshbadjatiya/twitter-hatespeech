@@ -1,8 +1,8 @@
-## Hate Speech Detection on Twitter
+# Hate Speech Detection on Twitter
 
 Repository to train a Machine learning model to detect hate speech in a tweet. Contains code for different models.
 
-### Dataset
+## Dataset
 
 Dataset can be downloaded from [https://github.com/zeerakw/hatespeech](https://github.com/zeerakw/hatespeech). Contains tweet id's and corresponding annotations. 
 
@@ -11,18 +11,21 @@ Tweets are labelled as either Racist, Sexist or Neither Racist or Sexist.
 Use your favourite tweet crawler and download the data and place the tweets in the folder 'tweet_data'.
 
 
-### Requirements
+## Requirements
 * Keras 
 * Tensorflow or Theano (we experimented with theano)
 * Gensim
 * xgboost
+* NLTK
+* Sklearn
+* Numpy
 
-### Instructions to run
+## Instructions to run
 
-To run a model ([MODEL]) for training, use 
+To run a model ([MODEL]) for training, use the following instructions mentioned below. Use appropriate parameter settings to test the variations of the model.
 
-
-For BoWV.py
+- BagOfWords models (BoWV.py)
+```
 usage: BoWV.py [-h] -m
                {logistic,gradient_boosting,random_forest,svm,svm_linear} -f
                EMBEDDINGFILE -d DIMENSION --tokenizer {glove,nltk} [-s SEED]
@@ -43,10 +46,10 @@ optional arguments:
   --loss LOSS
   --kernel KERNEL
   --class_weight CLASS_WEIGHT
+```
 
-
-For tfidf.py
-
+- TF-IDF based models (tfidf.py)
+```
 usage: tfidf.py [-h] -m
                 {tfidf_svm,tfidf_svm_linear,tfidf_logistic,tfidf_gradient_boosting,tfidf_random_forest}
                 --max_ngram MAX_NGRAM --tokenizer {glove,nltk} [-s SEED]
@@ -68,9 +71,10 @@ optional arguments:
   --kernel KERNEL
   --class_weight CLASS_WEIGHT
   --use-inverse-doc-freq
+```
 
-
-For lstm.py
+- LSTM(RNN) based methods (lstm.py)
+```
 usage: lstm.py [-h] -f EMBEDDINGFILE -d DIMENSION --tokenizer {glove,nltk}
                --loss LOSS --optimizer OPTIMIZER [-s SEED] [--folds FOLDS]
                [--kernel KERNEL] [--class_weight CLASS_WEIGHT]
@@ -91,11 +95,14 @@ optional arguments:
   --class_weight CLASS_WEIGHT
   --initialize-weights {random,glove}
   --learn-embeddings
+```
 
-
-
-
-'python [MODEL] [WORD_EMBED_DIM']
+### Examples:
+```
+python BoWV.py --model logistic --seed 42 -f glove.twitter.27b.25d.txt -d 25 --seed 42 --folds 10
+python tfidf.py -m tfidf_svm_linear --max_ngram 3 --tokenizer glove --loss squared_hinge
+python lstm.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 25 --tokenizer glove --loss categorical_crossentropy --optimizer adam --initialize-weights random --learn-embeddings
+```
 
 ### TO-DOs
 
