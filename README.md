@@ -42,6 +42,32 @@ optional arguments:
   --class_weight CLASS_WEIGHT
 
 
+
+For tfidf.py
+
+usage: tfidf.py [-h] -m
+                {tfidf_svm,tfidf_svm_linear,tfidf_logistic,tfidf_gradient_boosting,tfidf_random_forest}
+                --max_ngram MAX_NGRAM --tokenizer {glove,nltk} [-s SEED]
+                [--folds FOLDS] [--estimators ESTIMATORS] [--loss LOSS]
+                [--kernel KERNEL] [--class_weight CLASS_WEIGHT]
+                [--use-inverse-doc-freq]
+
+TF-IDF model for twitter Hate speech detection
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m {tfidf_svm,tfidf_svm_linear,tfidf_logistic,tfidf_gradient_boosting,tfidf_random_forest}, --model {tfidf_svm,tfidf_svm_linear,tfidf_logistic,tfidf_gradient_boosting,tfidf_random_forest}
+  --max_ngram MAX_NGRAM
+  --tokenizer {glove,nltk}
+  -s SEED, --seed SEED
+  --folds FOLDS
+  --estimators ESTIMATORS
+  --loss LOSS
+  --kernel KERNEL
+  --class_weight CLASS_WEIGHT
+  --use-inverse-doc-freq
+
+
 'python [MODEL] [WORD_EMBED_DIM']
 
 ### TO-DOs

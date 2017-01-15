@@ -128,7 +128,6 @@ def classification_model(X, Y, model_type=None):
 
 if __name__ == "__main__":
 
-    #filter_vocab(20000)
     parser = argparse.ArgumentParser(description='BagOfWords model for twitter Hate speech detection')
     parser.add_argument('-m', '--model', required=True)
     parser.add_argument('-f', '--embeddingfile', required=True)
@@ -155,6 +154,8 @@ if __name__ == "__main__":
     print 'GLOVE embedding: %s' %(GLOVE_MODEL_FILE)
     print 'Embedding Dimension: %d' %(EMBEDDING_DIM)
     word2vec_model = gensim.models.Word2Vec.load_word2vec_format(GLOVE_MODEL_FILE)
+
+    #filter_vocab(20000)
 
     tweets = select_tweets_whose_embedding_exists()
     X, Y = gen_data()
