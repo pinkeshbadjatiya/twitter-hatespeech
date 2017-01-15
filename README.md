@@ -22,7 +22,8 @@ Use your favourite tweet crawler and download the data and place the tweets in t
 
 ## Instructions to run
 
-To run a model ([MODEL]) for training, use the following instructions mentioned below. Use appropriate parameter settings to test the variations of the model.
+Before running the model, make sure you have setup the input dataset in a folder named `tweet_data`.   
+To run a model for training, use the following instructions mentioned below. Use appropriate parameter settings to test the variations of the models.
 
 - BagOfWords models - **BoWV.py**
 ```
@@ -130,7 +131,7 @@ optional arguments:
 
 
 
-### Examples:
+## Examples:
 ```
 python BoWV.py --model logistic --seed 42 -f glove.twitter.27b.25d.txt -d 25 --seed 42 --folds 10
 python tfidf.py -m tfidf_svm_linear --max_ngram 3 --tokenizer glove --loss squared_hinge
@@ -138,9 +139,3 @@ python lstm.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 2
 python cnn.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 25 --tokenizer nltk --loss categorical_crossentropy --optimizer adam --epochs 10 --batch-size 128 --initialize-weights random --scale-loss-function
 
 ```
-
-### TO-DOs
-
-Some model parameters hard-coded, add a nice command line argument module
-
-
