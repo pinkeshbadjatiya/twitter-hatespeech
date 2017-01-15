@@ -48,6 +48,9 @@ TOKENIZER = None
 MAX_SEQUENCE_LENGTH = None
 INITIALIZE_WEIGHTS_WITH = None
 LEARN_EMBEDDINGS = None
+EPOCHS = 10
+BATCH_SIZE = 512
+SCALE_LOSS_FUN = None
 
 word2vec_model = None
 
@@ -162,7 +165,7 @@ def lstm_model(sequence_length, embedding_dim):
     return model
 
 
-def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=512):
+def train_LSTM(X, y, model, inp_dim, weights, epochs=EPOCHS, batch_size=BATCH_SIZE):
     cv_object = KFold(n_splits=NO_OF_FOLDS, shuffle=True, random_state=42)
     print cv_object
     p, r, f1 = 0., 0., 0.
@@ -184,13 +187,21 @@ def train_LSTM(X, y, model, inp_dim, weights, epochs=10, batch_size=512):
             for X_batch in batch_gen(X_temp, batch_size):
                 x = X_batch[:, :sentence_len]
                 y_temp = X_batch[:, sentence_len]
+
+                class_weights = None
+                if SCALE_LOSS_FUN:
+                    class_weights = {}
+                    class_weights[0] = np.where(y_temp == 0)[0].shape[0]/float(len(y_temp))
+                    class_weights[1] = np.where(y_temp == 1)[0].shape[0]/float(len(y_temp))
+                    class_weights[2] = np.where(y_temp == 2)[0].shape[0]/float(len(y_temp))
+
                 try:
                     y_temp = np_utils.to_categorical(y_temp, nb_classes=3)
                 except Exception as e:
                     print e
                     print y_temp
                 print x.shape, y.shape
-                loss, acc = model.train_on_batch(x, y_temp)#, class_weight=class_weights)
+                loss, acc = model.train_on_batch(x, y_temp, class_weight=class_weights)
                 print loss, acc
 
         y_pred = model.predict_on_batch(X_test)
@@ -224,12 +235,16 @@ if __name__ == "__main__":
     parser.add_argument('--tokenizer', choices=['glove', 'nltk'], required=True)
     parser.add_argument('--loss', default=LOSS_FUN, required=True)
     parser.add_argument('--optimizer', default=OPTIMIZER, required=True)
+    parser.add_argument('--epochs', default=EPOCHS, required=True)
+    parser.add_argument('--batch-size', default=BATCH_SIZE, required=True)
     parser.add_argument('-s', '--seed', default=SEED)
     parser.add_argument('--folds', default=NO_OF_FOLDS)
     parser.add_argument('--kernel', default=KERNEL)
     parser.add_argument('--class_weight')
     parser.add_argument('--initialize-weights', choices=['random', 'glove'], required=True)
     parser.add_argument('--learn-embeddings', action='store_true', default=False)
+    parser.add_argument('--scale-loss-function', action='store_true', default=False)
+
 
     args = parser.parse_args()
     GLOVE_MODEL_FILE = args.embeddingfile
@@ -246,6 +261,10 @@ if __name__ == "__main__":
         TOKENIZER = tokenize_nltk.casual.TweetTokenizer(strip_handles=True, reduce_len=True).tokenize
     INITIALIZE_WEIGHTS_WITH = args.initialize_weights    
     LEARN_EMBEDDINGS = args.learn_embeddings
+    EPOCHS = int(args.epochs)
+    BATCH_SIZE = int(args.batch_size)
+    SCALE_LOSS_FUN = args.scale_loss_function
+
 
 
     np.random.seed(SEED)
