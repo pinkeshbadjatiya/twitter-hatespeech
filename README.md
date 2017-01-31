@@ -25,9 +25,20 @@ Use your favourite tweet crawler and download the data and place the tweets in t
 Before running the model, make sure you have setup the input dataset in a folder named `tweet_data`.   
 To run a model for training, use the following instructions mentioned below. Use appropriate parameter settings to test the variations of the models.
 
-- BagOfWords models - **BoWV.py**
+
+### This script contains code for runnning NN_model + GDBT. 
+
+Steps to run NN_model + GDBT
+ * Run NN_model first (CNN/LSTM/Fast_text). It will create a model file
+ * Change the name of the file at line 50 pointing to the model file
+ * Run nn_classifier file as per instructions below
+
+python nn_classifier.py <GradientBoosting(xgboost) or Random Forest> 
+
+
+- BagOfWords models - **BoWV.py[does not supports XGBOOST, supports sklearn's GBDT]**
 ```
-usage: BoWV.py [-h] -m
+usage: BoWV.py [-h] -m [Deprecated]
                {logistic,gradient_boosting,random_forest,svm,svm_linear} -f
                EMBEDDINGFILE -d DIMENSION --tokenizer {glove,nltk} [-s SEED]
                [--folds FOLDS] [--estimators ESTIMATORS] [--loss LOSS]
