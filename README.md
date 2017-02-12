@@ -1,6 +1,6 @@
 # Hate Speech Detection on Twitter
 
-Repository to train a Machine learning model to detect hate speech in a tweet. Contains code for different models.
+Implementation of our paper titled - "Deep Learning for Hate Speech Detection" (to appear in WWW'17 proceedings). 
 
 ## Dataset
 
