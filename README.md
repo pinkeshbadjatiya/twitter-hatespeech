@@ -144,7 +144,7 @@ optional arguments:
 
 ## Examples:
 ```
-python BoWV.py --model logistic --seed 42 -f glove.twitter.27b.25d.txt -d 25 --seed 42 --folds 10
+python BoWV.py --model logistic --seed 42 -f glove.twitter.27b.25d.txt -d 25 --seed 42 --folds 10 --tokenizer glove  
 python tfidf.py -m tfidf_svm_linear --max_ngram 3 --tokenizer glove --loss squared_hinge
 python lstm.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 25 --tokenizer glove --loss categorical_crossentropy --optimizer adam --initialize-weights random --learn-embeddings --epochs 10 --batch-size 512
 python cnn.py -f ~/DATASETS/glove-twitter/GENSIM.glove.twitter.27B.25d.txt -d 25 --tokenizer nltk --loss categorical_crossentropy --optimizer adam --epochs 10 --batch-size 128 --initialize-weights random --scale-loss-function
